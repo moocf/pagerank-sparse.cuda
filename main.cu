@@ -171,8 +171,8 @@ void runDotProduct() {
 
 int main(int argc, char **argv) {
   printf("Loading graph ...\n");
-  // DiGraph g;
-  // readMtx(g, argv[1]);
+  DiGraph g;
+  readMtx(g, argv[1]);
   testAll();
   runFill();
   runSum();

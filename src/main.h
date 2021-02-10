@@ -6,5 +6,6 @@
 #include "fill.h"
 #include "measureDuration.h"
 #include "print.h"
+#include "readMtx.h"
 #include "sum.h"
 #include "transpose.h"

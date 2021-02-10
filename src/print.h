@@ -3,6 +3,7 @@
 #include <vector>
 #include <stdio.h>
 #include "_support.h"
+#include "DiGraph.h"
 
 
 
@@ -39,6 +40,22 @@ void print(T *x, int R, int C) {
   for (int r=0; r<R; r++) {
     for (int c=0; c<C; c++)
       printf("%.4f, ", GET2D(x, r, c, C));
+    printf("\n");
+  }
+  printf("}\n");
+}
+
+
+
+
+// Prints graph.
+void print(DiGraph& x) {
+  printf("{\n");
+  for (int i=0, I=x.span(); i<I; i++) {
+    if (!x.hasVertex(i)) continue;
+    printf("%d ->", i);
+    for (int j : x.edges(i))
+      printf(" %d", j);
     printf("\n");
   }
   printf("}\n");
