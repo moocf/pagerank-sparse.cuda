@@ -49,7 +49,9 @@ void print(T *x, int R, int C) {
 
 
 // Prints graph.
-void print(DiGraph& x) {
+void print(DiGraph& x, bool all=false) {
+  printf("span: %d, order: %d, size: %d", x.span(), x.order(), x.size());
+  if (!all) { printf("\n"); return; }
   printf("{\n");
   for (int i=0, I=x.span(); i<I; i++) {
     if (!x.hasVertex(i)) continue;

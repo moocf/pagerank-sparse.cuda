@@ -152,19 +152,16 @@ void runDotProduct() {
 }
 
 
-// template <class T>
-// void runPageRank(DenseDiGraph<T>& g) {
-//   int N = g.order;
-//   float *ranks = new float[N], t;
-//   normalizeDegree(g);
-//   t = measureDuration([&]() { pageRank(ranks, g); });
-//   printf("[%07.1f ms] pageRank     = \n", t); // print(ranks, N);
-//   t = measureDuration([&]() { pageRankOmp(ranks, g); });
-//   printf("[%07.1f ms] pageRankOmp  = \n", t); // print(ranks, N);
-//   t = measureDuration([&]() { pageRankCuda(ranks, g); });
-//   printf("[%07.1f ms] pageRankCuda = \n", t); // print(ranks, N);
-//   delete[] ranks;
-// }
+void runPageRank(DiGraph& g) {
+  float t;
+  vector<float> ranks;
+  t = measureDuration([&]() { ranks = pageRank(g); });
+  printf("[%07.1f ms] pageRank     = \n", t); print(ranks);
+  // t = measureDuration([&]() { pageRankOmp(ranks, g); });
+  // printf("[%07.1f ms] pageRankOmp  = \n", t); // print(ranks, N);
+  // t = measureDuration([&]() { pageRankCuda(ranks, g); });
+  // printf("[%07.1f ms] pageRankCuda = \n", t); // print(ranks, N);
+}
 
 
 
@@ -173,11 +170,12 @@ int main(int argc, char **argv) {
   printf("Loading graph ...\n");
   DiGraph g;
   readMtx(g, argv[1]);
+  print(g);
   testAll();
-  runFill();
-  runSum();
-  runErrorAbs();
-  runDotProduct();
-  // runPageRank(g);
+  // runFill();
+  // runSum();
+  // runErrorAbs();
+  // runDotProduct();
+  runPageRank(g);
   return 0;
 }

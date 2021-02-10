@@ -10,7 +10,7 @@ using namespace std;
 class DiGraph {
   vector<bool> has;
   vector<vector<int>> out;
-  int N, M;
+  int N = 0, M = 0;
 
 
 
@@ -49,11 +49,13 @@ class DiGraph {
 
 
   void addVertex(int i) {
+    if (hasVertex(i)) return;
     if (i >= span()) {
       has.resize(i+1);
       out.resize(i+1);
     }
     has[i] = true;
+    N++;
   }
 
 
@@ -61,6 +63,7 @@ class DiGraph {
     if (!hasVertex(i)) return;
     out[i].clear();
     has[i] = false;
+    N--;
   }
 
 
@@ -88,6 +91,7 @@ class DiGraph {
     addVertex(i);
     addVertex(j);
     out[i].push_back(j);
+    M++;
   }
 
 
@@ -95,5 +99,6 @@ class DiGraph {
     if (!hasEdge(i, j)) return;
     auto& e = edges(i);
     e.erase(remove(e.begin(), e.end(), j), e.end());
+    M--;
   }
 };
