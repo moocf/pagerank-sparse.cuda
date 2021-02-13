@@ -81,6 +81,37 @@ vector<T>& pageRank(DiGraph& x, pageRankOptions<T> o=pageRankOptions<T>()) {
 
 
 
+template <class T>
+void pageRankPullStep(DiGraph& x, vector<T>& c, vector<T>& a) {
+  int S = x.span();
+  for (int i=0; i<S; i++) {
+    if (!x.hasVertex(i)) continue;
+    a[i] = sumAt(c, x.edges(i));
+  }
+}
+
+
+template <class T>
+void pageRankPullPostprocess(vector<T>& a, vector<T>& d, T p, T q) {
+
+}
+
+
+template <class T>
+vector<T>& pageRankPull(DiGraph& x, T p,T E) {
+  int S = x.span(), N = x.order();
+  vector<T>& r = *new vector<T>(S);
+  vector<T>& a = *new vector<T>(S);
+  fill(r, T(1)/N);
+  while (1) {
+  }
+}
+
+
+template <class T>
+__global__ void pageRankKernel(bool *has, int *deg, int *vout, int *eout, int S, int N, T p, T E) {
+  DEFINE(t, b, B, G);
+}
 // template <class T>
 // __global__ void pageRankKernel(int *e, T *a, T *r, T *w, int N, T p, T E) {
 //   DEFINE(t, b, B, G);
