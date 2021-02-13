@@ -5,6 +5,9 @@
 #include "_support.h"
 #include "DiGraph.h"
 
+using std::array;
+using std::vector;
+
 
 
 

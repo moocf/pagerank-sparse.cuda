@@ -1,10 +1,15 @@
 #pragma once
 #include <array>
 #include <vector>
+#include <algorithm>
+#include <memory>
 #include <omp.h>
 #include "_cuda.h"
 
-using namespace std;
+using std::array;
+using std::vector;
+using std::unique_ptr;
+using std::max;
 
 
 
@@ -92,19 +97,19 @@ T sumCuda(T *x, int N) {
   int blocks = max(ceilDiv(N, threads), 1024);
   size_t X1 = N * sizeof(T);
   size_t A1 = blocks * sizeof(T);
-  T *aPartial = (T*) malloc(A1);
+  unique_ptr<T> a(new T[A1]);
 
-  T *xD, *aPartialD;
+  T *xD, *aD;
   TRY( cudaMalloc(&xD, X1) );
-  TRY( cudaMalloc(&aPartialD, A1) );
+  TRY( cudaMalloc(&aD, A1) );
   TRY( cudaMemcpy(xD, x, X1, cudaMemcpyHostToDevice) );
 
-  sumKernel<<<blocks, threads>>>(aPartialD, xD, N);
-  TRY( cudaMemcpy(aPartial, aPartialD, A1, cudaMemcpyDeviceToHost) );
+  sumKernel<<<blocks, threads>>>(aD, xD, N);
+  TRY( cudaMemcpy(a.get(), aD, A1, cudaMemcpyDeviceToHost) );
 
   TRY( cudaFree(xD) );
-  TRY( cudaFree(aPartialD) );
-  return sum(aPartial, blocks);
+  TRY( cudaFree(aD) );
+  return sum(a.get(), blocks);
 }
 
 

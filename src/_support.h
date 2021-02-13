@@ -13,12 +13,77 @@ typedef unsigned char uint8;
 #define UINT8 uint8
 #endif
 
+#ifndef NONE
+struct None {};
+#define NONE None
+#endif
+
+#ifndef IDENTITY
+struct Identity {
+  template <class T>
+  constexpr T&& operator()(T&& x) const noexcept { return x; }
+};
+#define IDENTITY Identity()
+#endif
+
 
 
 
 #ifndef GET2D
 // Gets value at given row, column of 2D array
 #define GET2D(x, r, c, C) (x)[(C)*(r) + (c)]
+#endif
+
+
+
+
+#ifndef ITERATOR_DEREF
+#define ITERATOR_DEREF(It, se, be, ae) \
+  reference operator*() { return se; } \
+  reference operator[](difference_type i) { return be; } \
+  pointer operator->() { return ae; }
+#endif
+
+#ifndef ITERATOR_NEXTR
+#define ITERATOR_NEXTR(It, ie, de) \
+  It& operator++() { ie; return *this; }  \
+  It& operator--() { de; return *this; }  \
+  It operator++(int) { It a = *this; ++(*this); return a; } \
+  It operator--(int) { It a = *this; --(*this); return a; }
+#endif
+
+#ifndef ITERATOR_ADVANCER
+#define ITERATOR_ADVANCER(It, i, fe, be) \
+  It& operator+=(difference_type i) { fe; return *this; } \
+  It& operator-=(difference_type i) { be; return *this; }
+#endif
+
+#ifndef ITERATOR_ADVANCEP
+#define ITERATOR_ADVANCEP(It, a, b, ...)  \
+  friend It operator+(const It& a, difference_type b) { return It(__VA_ARGS__); } \
+  friend It operator+(difference_type b, const It& a) { return It(__VA_ARGS__); }
+#endif
+
+#ifndef ITERATOR_ADVANCEN
+#define ITERATOR_ADVANCEN(It, a, b, ...) \
+  friend It operator-(const It& a, difference_type b) { return It(__VA_ARGS__); } \
+  friend It operator-(difference_type b, const It& a) { return It(__VA_ARGS__); }
+#endif
+
+#ifndef ITERATOR_COMPARISION
+#define ITERATOR_COMPARISION(It, a, b, ae, be)  \
+  friend bool operator==(const It& a, const It& b) { return ae == be; } \
+  friend bool operator!=(const It& a, const It& b) { return ae != be; } \
+  friend bool operator>=(const It& a, const It& b) { return ae >= be; } \
+  friend bool operator<=(const It& a, const It& b) { return ae <= be; } \
+  friend bool operator>(const It& a, const It& b) { return ae > be; } \
+  friend bool operator<(const It& a, const It& b) { return ae < be; }
+#endif
+
+#ifndef ITERABLE_SIZE
+#define ITERABLE_SIZE(se) \
+  size_t size() { return se; } \
+  bool empty() { return size() == 0; }
 #endif
 
 

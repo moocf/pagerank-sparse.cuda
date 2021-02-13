@@ -1,10 +1,13 @@
 #pragma once
 #include <array>
 #include <vector>
+#include <algorithm>
 #include <omp.h>
 #include "_cuda.h"
 
-using namespace std;
+using std::array;
+using std::vector;
+using std::max;
 
 
 

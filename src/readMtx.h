@@ -4,7 +4,10 @@
 #include <string>
 #include "DiGraph.h"
 
-using namespace std;
+using std::string;
+using std::ifstream;
+using std::istringstream;
+using std::getline;
 
 
 

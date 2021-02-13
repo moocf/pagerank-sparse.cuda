@@ -9,9 +9,11 @@
 template <class F>
 float measureDuration(F fn) {
   clock_t start = clock();
+
   fn();
+
   clock_t stop = clock();
-  float duration = (float)(stop - start) / CLOCKS_PER_SEC;
+  float duration = (float) (stop - start) / CLOCKS_PER_SEC;
   return duration * 1000;
 }
 

@@ -7,6 +7,28 @@ using namespace std;
 
 
 
+const char* testRange() {
+  int n = 0;
+  double v = 0, V = 10, DV = 0.5;
+  for (double x : rangeIterable(v, V, DV))
+    if (x != v+DV*(n++)) return "rangeIterable";
+  if (n != 20) return "rangeIterable";
+  return NULL;
+}
+
+
+const char* testTransform() {
+  int n = 0;
+  double v = 0, V = 10, DV = 0.5;
+  for (double x : transform(rangeIterable(v, V, DV), [](double a) { return a*2; })) {
+    if ((int) x != x) return "transform";
+    n++;
+  }
+  if (n != 20) return "transform";
+  return NULL;
+}
+
+
 const char* testFill() {
   array<int, 4> x = {1, 2, 3, 4};
   array<int, 4> a;
@@ -75,17 +97,19 @@ const char* testErrorAbs() {
 
 const char* testAll() {
   vector<const char*> ts = {
+    testRange(),
+    testTransform(),
     testFill(),
     testSum(),
     testDotProduct(),
     testErrorAbs()
   };
+  const char *e = NULL;
   for (auto& t : ts) {
-    if (!t) continue;
-    printf("ERROR: %s() failed!\n", t);
-    return t;
+    if (t) printf("ERROR: %s() failed!\n", t);
+    e = e? e : t;
   }
-  return NULL;
+  return e;
 }
 
 
@@ -95,11 +119,11 @@ void runFill() {
   int N = 64*1024*1024;
   float *x = new float[N], t;
   t = measureDuration([&]() { fill(x, N, 1.0f); });
-  printf("[%07.1f ms] fill     = \n", t);
+  printf("[%07.1f ms] fill\n", t);
   t = measureDuration([&]() { fillOmp(x, N, 1.0f); });
-  printf("[%07.1f ms] fillOmp  = \n", t);
+  printf("[%07.1f ms] fillOmp\n", t);
   t = measureDuration([&]() { fillCuda(x, N, 1.0f); });
-  printf("[%07.1f ms] fillCuda = \n", t);
+  printf("[%07.1f ms] fillCuda\n", t);
   delete[] x;
 }
 
@@ -109,11 +133,11 @@ void runSum() {
   float *x = new float[N], t;
   fill(x, N, 1.0f);
   t = measureDuration([&]() { sum(x, N); });
-  printf("[%07.1f ms] sum     = \n", t);
+  printf("[%07.1f ms] sum\n", t);
   t = measureDuration([&]() { sumOmp(x, N); });
-  printf("[%07.1f ms] sumOmp  = \n", t);
+  printf("[%07.1f ms] sumOmp\n", t);
   t = measureDuration([&]() { sumCuda(x, N); });
-  printf("[%07.1f ms] sumCuda = \n", t);
+  printf("[%07.1f ms] sumCuda\n", t);
   delete[] x;
 }
 
@@ -125,11 +149,11 @@ void runErrorAbs() {
   fill(x, N, 1.0f);
   fill(y, N, 2.0f);
   t = measureDuration([&]() { errorAbs(x, y, N); });
-  printf("[%07.1f ms] errorAbs     = \n", t);
+  printf("[%07.1f ms] errorAbs\n", t);
   t = measureDuration([&]() { errorAbsOmp(x, y, N); });
-  printf("[%07.1f ms] errorAbsOmp  = \n", t);
+  printf("[%07.1f ms] errorAbsOmp\n", t);
   t = measureDuration([&]() { errorAbsCuda(x, y, N); });
-  printf("[%07.1f ms] errorAbsCuda = \n", t);
+  printf("[%07.1f ms] errorAbsCuda\n", t);
   delete[] x;
   delete[] y;
 }
@@ -142,11 +166,11 @@ void runDotProduct() {
   fill(x, N, 1.0f);
   fill(y, N, 1.0f);
   t = measureDuration([&]() { dotProduct(x, y, N); });
-  printf("[%07.1f ms] dotProduct     = \n", t);
+  printf("[%07.1f ms] dotProduct\n", t);
   t = measureDuration([&]() { dotProductOmp(x, y, N); });
-  printf("[%07.1f ms] dotProductOmp  = \n", t);
+  printf("[%07.1f ms] dotProductOmp\n", t);
   t = measureDuration([&]() { dotProductCuda(x, y, N); });
-  printf("[%07.1f ms] dotProductCuda = \n", t);
+  printf("[%07.1f ms] dotProductCuda\n", t);
   delete[] x;
   delete[] y;
 }
@@ -156,7 +180,7 @@ void runPageRank(DiGraph& g) {
   float t;
   vector<float> ranks;
   t = measureDuration([&]() { ranks = pageRank(g); });
-  printf("[%07.1f ms] pageRank     = \n", t); print(ranks);
+  printf("[%07.1f ms] pageRank     \n", t); print(ranks);
   // t = measureDuration([&]() { pageRankOmp(ranks, g); });
   // printf("[%07.1f ms] pageRankOmp  = \n", t); // print(ranks, N);
   // t = measureDuration([&]() { pageRankCuda(ranks, g); });
@@ -172,10 +196,10 @@ int main(int argc, char **argv) {
   readMtx(g, argv[1]);
   print(g);
   testAll();
-  // runFill();
-  // runSum();
-  // runErrorAbs();
-  // runDotProduct();
-  runPageRank(g);
+  runFill();
+  runSum();
+  runErrorAbs();
+  runDotProduct();
+  // runPageRank(g);
   return 0;
 }
