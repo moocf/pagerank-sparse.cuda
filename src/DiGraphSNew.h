@@ -6,26 +6,24 @@
 #include "_support.h"
 #include "filter.h"
 #include "range.h"
-#include "slice.h"
 #include "scan.h"
 #include "transform.h"
 #include "insert.h"
 #include "erase.h"
+#include <stdio.h>
 
 using std::tuple;
 using std::vector;
-using std::back_inserter;
+using std::min;
 using std::count;
 using std::lower_bound;
 using std::transform;
-using std::copy_if;
-using std::sort;
 
 
 
 
 template <class K=int, class V=NONE, class E=NONE>
-class DiGraphCompact {
+class CompactDiGraph {
   vector<int> vto;
   vector<int> eto;
   vector<K> vkeys;
@@ -37,8 +35,8 @@ class DiGraphCompact {
   private:
   int n() { return vto.size()-1; }
   int m() { return eto.size(); }
-  int estrt(int i) { return vto[max(i, n())]; }
-  int estop(int i) { return vto[max(i+1, n())]; }
+  int estrt(int i) { return vto[min(i, n())]; }
+  int estop(int i) { return vto[min(i+1, n())]; }
   auto vbgn() { return vto.begin(); }
   auto vend() { return vto.end(); }
   auto ebgn() { return eto.begin(); }
@@ -48,7 +46,7 @@ class DiGraphCompact {
   auto ebgn(int i) { return ebgn()+estrt(i); }
   auto eend(int i) { return ebgn()+estop(i); }
   int escan(int i, int j) { return scan(ebgn(i), eend(i), j) - ebgn(); }
-  int esrch(int i, int j) { int i = escan(i, j); return i == estop(i)? -1 : i; }
+  int esrch(int i, int j) { int o = escan(i, j); return o == estop(i)? -1 : o; }
   bool hasv(int i) { return i < n(); }
   bool hase(int i, int j) { return hasv(i) && hasv(j) && esrch(i, j) >= 0; }
 
@@ -57,13 +55,22 @@ class DiGraphCompact {
   K vk(int i) { return vkeys[i]; }
 
   int vscanl(K u) { return lower_bound(vkeys.begin(), vkeys.end(), u) - vkeys.begin(); }
-  int escanl(int i, int j) { return lower_bound(ebgn(i), eend(i), j) - ebgn(i); }
-  void vadj(int i, int n) { transform(vbgn(i), vend(), vbgn(i), [](int o) { return o+n; }) }
+  int escanl(int i, int j) { return lower_bound(ebgn(i), eend(i), j) - ebgn(); }
+  void vadj(int i, int n) { transform(vbgn(i), vend(), vbgn(i), [&](int o) { return o+n; }); }
+  void eadj(int i, int n) { transform(ebgn(), eend(), ebgn(), [&](int o) { return o<i? o:o+n; }); }
 
   void vins(int o, K u, V d) {
     insert(vto, o, vto[o]);
     insert(vkeys, o, u);
     insert(vdata, o, d);
+    if (o != n()) eadj(o, 1);
+  }
+
+  void vdel(int o) {
+    erase(vto, o);
+    erase(vkeys, o);
+    erase(vdata, o);
+    if (o != n()) eadj(o, -1);
   }
 
   void eins(int o, int j, E d) {
@@ -71,9 +78,13 @@ class DiGraphCompact {
     insert(edata, o, d);
   }
 
-  void edel(int o, int p=o+1) {
+  void edel(int o, int p) {
     erase(eto, o, p);
     erase(edata, o, p);
+  }
+
+  void edel(int o) {
+    edel(o, o+1);
   }
 
 
@@ -88,8 +99,8 @@ class DiGraphCompact {
   bool hasEdgeI(int i, int j) { return hase(i, j); }
 
   auto verticesI() { return rangeIterable(n()); }
-  auto edgesI(int i) { return transform(ebgn(i), eend(i)); }
-  auto inEdgesI(int j) { return filter(vto, [=](int i) { return esrch(i, j) >= 0; }); }
+  auto edgesI(int i) { return transform(ebgn(i), eend(i), [=](int j) { return j; }); }
+  auto inEdgesI(int j) { return filter(vto, [&](int i) { return esrch(i, j) >= 0; }); }
   int degreeI(int i) { return estop(i) - estrt(i); }
   int inDegreeI(int j) { return count(ebgn(), eend(), j); }
   K vertexKeyI(int i) { return vk(i); }
@@ -132,6 +143,7 @@ class DiGraphCompact {
 
   // Arduino-like facade
   public:
+  CompactDiGraph() { vto.push_back(0); }
   int order() { return n(); }
   int size() { return m(); }
   bool empty() { return n() == 0; }
@@ -146,20 +158,50 @@ class DiGraphCompact {
   int searchVertex(K u) { return hasVertex(u)? vi(u) : -1; }
   int searchEdge(K u, K v) { return hasEdge(u, v)? ei(u, v) : -1; }
 
-  auto edges(K u) { return transform(edgesI(vi(u)), vk); }
-  auto inEdges(K v) { return transform(inEdgesI(vi(v)), vk); }
-  int degree(K u) { return odeg(vi(u)); }
-  int inDegree(K v) { return ideg(vi(v)); }
+  auto edges(K u) { return transform(edgesI(vi(u)), [&](int i) { return vk(i); }); }
+  auto inEdges(K v) { return transform(inEdgesI(vi(v)), [&](int j) { return vk(j); }); }
+  int degree(K u) { return degreeI(vi(u)); }
+  int inDegree(K v) { return inDegreeI(vi(v)); }
 
   V vertexData(K u) { return hasVertex(u)? vertexDataI(vi(u)) : V(); }
   E edgeData(K u, K v) { return hasEdge(u, v)? edgeDataI(ei(u, v)) : E(); }
   void setVertexData(K u, V d) { if (hasVertex(u)) setVertexDataI(vi(u), d); }
   void setEdgeData(K u, K v, V d) { if (hasEdge(u, v)) setEdgeDataI(ei(u, v), d); }
 
-  void addVertex(K u, V d=V()) { if (!hasVertex(u)) vins(vi(u), u, d); }
-  void addEdge(K u, K v, E d=E()) { if (!hasEdge(u, v)) addEdgeI(vi(u), vi(v), d); }
   void removeEdge(K u, K v) { if (hasEdge(u, v)) removeEdgeI(vi(u), vi(v)); }
   void removeEdges(K u) { if (hasVertex(u)) removeEdgesI(vi(u)); }
   void removeInEdges(K v) { if (hasVertex(v)) removeInEdgesI(vi(v)); }
   void removeVertex(K u) { if (hasVertex(u)) removeVertexI(vi(u)); }
+  void addVertex(K u, V d=V()) { if (!hasVertex(u)) vins(vscanl(u), u, d); }
+
+  void addEdge(K u, K v, E d=E()) {
+    if (hasEdge(u, v)) return;
+    addVertex(u);
+    addVertex(v);
+    addEdgeI(vi(u), vi(v), d);
+  }
 };
+
+
+
+void runGraph() {
+  CompactDiGraph<> g;
+  g.addEdge(1, 2);
+  g.addEdge(2, 4);
+  g.addEdge(4, 3);
+  g.addEdge(3, 1);
+  g.addEdge(2, 5);
+  g.addEdge(4, 5);
+  g.addEdge(4, 7);
+  g.addEdge(5, 6);
+  g.addEdge(6, 8);
+  g.addEdge(8, 7);
+  g.addEdge(7, 5);
+  g.addEdge(5, 8);
+  printf("Order: %d\n", g.order());
+  printf("Size: %d\n", g.size());
+  for (auto&& u : g.vertices()) {
+    for (auto&& v : g.edgesI(u-1))
+      printf("%d -> %d\n", u, v+1);
+  }
+}

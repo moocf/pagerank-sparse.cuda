@@ -1,9 +1,7 @@
 #pragma once
 #include "ceilDiv.h"
-#include "contains.h"
 #include "DiGraph.h"
-#include "DiGraphNew.h"
-#include "DiGraphTemp.h"
+#include "DiGraphSNew.h"
 #include "dotProduct.h"
 #include "errorAbs.h"
 #include "fill.h"

@@ -1,6 +1,5 @@
 #pragma once
 #include <iterator>
-#include "_support.h"
 
 using std::random_access_iterator_tag;
 using std::iterator_traits;
@@ -34,7 +33,7 @@ class TransformIterable {
     ITERATOR_COMPARISION(Iterator, a, b, a.it, b.it)
   };
 
-  TransformIterable(I ib, I ie, F fn) : ib(ib), ie(ie), fn(fn) {}
+  TransformIterable(const I& ib, const I& ie, F fn) : ib(ib), ie(ie), fn(fn) {}
   Iterator begin() { return Iterator(fn, ib); }
   Iterator end() { return Iterator(fn, ie); }
   Iterator rbegin() { return Iterator(fn, ie-1); }
@@ -44,12 +43,12 @@ class TransformIterable {
 
 
 template <class I, class F>
-auto transform(I ib, I ie, F fn=IDENTITY) {
+auto transform(I ib, I ie, F fn) {
   return TransformIterable<I, F>(ib, ie, fn);
 }
 
 
 template <class I, class F>
-auto transform(I x, F fn) {
-  return transform(x.begin(), x.end(), fn);
+auto transform(I i, F fn) {
+  return TransformIterable<I, F>(i.begin(), i.end(), fn);
 }

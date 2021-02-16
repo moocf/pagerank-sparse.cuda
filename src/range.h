@@ -94,7 +94,8 @@ class RangeIterable {
 template <class T>
 auto rangeIterable(T v, T V, T DV=1) {
   int N = rangeSize(v, V, DV);
-  return transform(RangeIterable<T>(N), [=](int n) { return v+DV*n; });
+  auto i = RangeIterable<T>(N);
+  return transform(i.begin(), i.end(), [=](int n) { return v+DV*n; });
 }
 
 template <class T>
