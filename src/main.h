@@ -1,8 +1,8 @@
 #pragma once
 #include "ceilDiv.h"
 #include "DiGraph.h"
-// #include "DiGraphTemp.h"
-// #include "CompactDiGraph.h"
+#include "DiGraphTemp.h"
+#include "CompactDiGraph.h"
 #include "dotProduct.h"
 #include "erase.h"
 #include "errorAbs.h"

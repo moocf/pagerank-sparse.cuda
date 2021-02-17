@@ -327,14 +327,14 @@ void runPageRank(DiGraph& g) {
 int main(int argc, char **argv) {
   testAll();
   printf("Loading graph ...\n");
-  DiGraph g;
+  DiGraphTemp<> g;
   readMtx(g, argv[1]);
   print(g);
   runFill();
   runSum();
   runErrorAbs();
   runDotProduct();
-  // runGraph();
+  runGraph();
   // runPageRank(g);
   return 0;
 }

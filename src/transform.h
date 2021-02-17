@@ -48,6 +48,6 @@ auto transform(I ib, I ie, const F& fn) {
 }
 
 template <class C, class F>
-auto transform(C& x, const F& fn) {
+auto transform(C&& x, const F& fn) {
   return transform(x.begin(), x.end(), fn);
 }

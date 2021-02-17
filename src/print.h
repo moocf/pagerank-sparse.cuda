@@ -3,7 +3,7 @@
 #include <vector>
 #include <iostream>
 #include "_support.h"
-#include "DiGraph.h"
+#include "DiGraphTemp.h"
 
 using std::array;
 using std::vector;
@@ -52,11 +52,12 @@ void print(T *x, int R, int C) {
 
 
 // Prints graph.
-void print(DiGraph& x, bool all=false) {
-  printf("span: %d, order: %d, size: %d", x.span(), x.order(), x.size());
+template <class K, class V, class E>
+void print(DiGraphTemp<K, V, E>& x, bool all=false) {
+  printf("order: %d, size: %d", x.order(), x.size());
   if (!all) { printf("\n"); return; }
   printf("{\n");
-  for (int i=0, I=x.span(); i<I; i++) {
+  for (int i=0, I=x.order(); i<I; i++) {
     if (!x.hasVertex(i)) continue;
     printf("%d ->", i);
     for (int j : x.edges(i))

@@ -2,7 +2,7 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-#include "DiGraph.h"
+#include "DiGraphTemp.h"
 
 using std::string;
 using std::ifstream;
@@ -12,7 +12,8 @@ using std::getline;
 
 
 
-void readMtx(DiGraph& a, string pth) {
+template <class K, class V, class E>
+void readMtx(DiGraphTemp<K, V, E>& a, string pth) {
   string ln;
   ifstream f(pth);
 
@@ -30,6 +31,6 @@ void readMtx(DiGraph& a, string pth) {
     int i, j; float w;
     ls = istringstream(ln);
     if (!(ls >> i >> j >> w)) break;
-    if (w > 0) a.addEdge(i-1, j-1);
+    if (w > 0) a.addEdge(i, j);
   }
 }

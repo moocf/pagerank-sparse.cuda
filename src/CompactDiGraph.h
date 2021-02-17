@@ -50,7 +50,7 @@ class CompactDiGraph {
   bool hasv(int i) { return i < n(); }
   bool hase(int i, int j) { return hasv(i) && hasv(j) && esrch(i, j) >= 0; }
 
-  int vi(K u) { return scanIndex(vkeys, u); }
+  int vi(K u) { return scanAt(vkeys, u); }
   int ei(K u, K v) { return escan(vi(u), vi(v)); }
   K vk(int i) { return vkeys[i]; }
 
