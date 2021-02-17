@@ -181,27 +181,3 @@ class CompactDiGraph {
     addEdgeI(vi(u), vi(v), d);
   }
 };
-
-
-
-void runGraph() {
-  CompactDiGraph<> g;
-  g.addEdge(1, 2);
-  g.addEdge(2, 4);
-  g.addEdge(4, 3);
-  g.addEdge(3, 1);
-  g.addEdge(2, 5);
-  g.addEdge(4, 5);
-  g.addEdge(4, 7);
-  g.addEdge(5, 6);
-  g.addEdge(6, 8);
-  g.addEdge(8, 7);
-  g.addEdge(7, 5);
-  g.addEdge(5, 8);
-  printf("Order: %d\n", g.order());
-  printf("Size: %d\n", g.size());
-  for (auto&& u : g.vertices()) {
-    for (auto&& v : g.edgesI(u-1))
-      printf("%d -> %d\n", u, v+1);
-  }
-}
