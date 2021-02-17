@@ -4,6 +4,7 @@
 #include <iterator>
 #include <algorithm>
 #include "_support.h"
+#include "IGraph.h"
 #include "filter.h"
 #include "range.h"
 #include "scan.h"
@@ -23,7 +24,7 @@ using std::transform;
 
 
 template <class K=int, class V=NONE, class E=NONE>
-class CompactDiGraph {
+class CompactDiGraph : public IGraph<K, V, E> {
   vector<int> vto;
   vector<int> eto;
   vector<K> vkeys;

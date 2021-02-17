@@ -1,104 +1,102 @@
 #pragma once
+#include <tuple>
 #include <vector>
-#include <algorithm>
+#include <map>
+#include <utility>
+#include "_support.h"
+#include "IGraph.h"
+#include "scan.h"
+#include "transform.h"
 
-using namespace std;
+using std::tuple;
+using std::vector;
+using std::map;
+using std::get;
 
 
 
 
-class DiGraph {
-  vector<bool> has;
-  vector<vector<int>> out;
+template <class K=int, class V=NONE, class E=NONE>
+class DiGraph : public IGraph<K, V, E> {
+  map<K, tuple<vector<K>, vector<E>, V>> vto;
   int N = 0, M = 0;
 
+  // Cutie helpers
+  private:
+  auto ebgn(K u) { return get<0>(vto[u]).begin(); }
+  auto eend(K u) { return get<0>(vto[u]).end(); }
+  auto& edata(K u) { return get<1>(vto[u]); }
+  auto& vdata(K u) { return get<2>(vto[u]); }
+  int escan(K u, K v) { return scan(ebgn(u), eend(u), v) - ebgn(u); }
+  int esrch(K u, K v) { int i = escan(u, v); return i == eend(u)-ebgn(u)? -1 : i; }
 
 
-
+  // Arduino-like facade
   public:
-  int order() {
-    return N;
-  }
+  int order() { return N; }
+  int size() { return M; }
+  bool empty() { return order() == 0; }
 
+  bool hasVertex(K u) { return vto.find(u) != vto.end(); }
+  bool hasEdge(K u, K v) { return hasVertex(u) && hasVertex(v) && esrch(u, v) >= 0; }
+  auto vertices() { return transform(vto, [](auto p) { return p.first; }); }
+  auto& edges(K u) { return get<0>(vto[u]); }
+  auto inEdges(K v) { return filter(vto, [=](auto p) { return esrch(p.first, v) >= 0; }); }
+  int degree(K u) { return edges(u).size(); }
 
-  int size() {
-    return M;
-  }
-
-
-  int span() {
-    return has.size();
-  }
-
-
-
-
-  vector<int> vertices() {
-    vector<int> a;
-    a.reserve(N);
-    for (int i=0, I=has.size(); i<I; i++)
-      if (has[i]) a.push_back(i);
+  int inDegree(K v) {
+    int a = 0;
+    for (auto&& p : vto)
+      if (esrch(p.first, v) >= 0) a++;
     return a;
   }
 
+  V vertexData(K u) { return hasVertex(u)? vdata(u) : V(); }
+  E edgeData(K u, K v) { return hasEdge(u, v)? edata(u)[escan(u, v)] : E(); }
+  void setVertexData(K u, V d) { if (hasVertex(u)) vdata(u) = d; }
+  void setEdgeData(K u, K v, V d) { if (hasEdge(u, v)) edata(u)[escan(u, v)] = d; }
 
-  bool hasVertex(int i) {
-    if (i >= span()) return false;
-    return has[i];
-  }
-
-
-  void addVertex(int i) {
-    if (hasVertex(i)) return;
-    if (i >= span()) {
-      has.resize(i+1);
-      out.resize(i+1);
-    }
-    has[i] = true;
+  void addVertex(K u, V d=V()) {
+    if (hasVertex(u)) return;
+    vto[u] = {{}, {}, V()};
     N++;
   }
 
-
-  void removeVertex(int i) {
-    if (!hasVertex(i)) return;
-    out[i].clear();
-    has[i] = false;
-    N--;
-  }
-
-
-
-
-  vector<int>& edges(int i) {
-    return out[i];
-  }
-
-
-  int degree(int i) {
-    return edges(i).size();
-  }
-
-
-  bool hasEdge(int i, int j) {
-    if (i >= span() || j >= span()) return false;
-    auto& e = edges(i);
-    return find(e.begin(), e.end(), j) != e.end();
-  }
-
-
-  void addEdge(int i, int j) {
-    if (hasEdge(i, j)) return;
-    addVertex(i);
-    addVertex(j);
-    out[i].push_back(j);
+  void addEdge(K u, K v, E d=E()) {
+    if (hasEdge(u, v)) return;
+    addVertex(u);
+    addVertex(v);
+    edges(u).push_back(v);
+    edata(u).push_back(d);
     M++;
   }
 
-
-  void removeEdge(int i, int j) {
-    if (!hasEdge(i, j)) return;
-    auto& e = edges(i);
-    e.erase(remove(e.begin(), e.end(), j), e.end());
+  void removeEdge(K u, K v) {
+    if (!hasEdge(u, v)) return;
+    int o = escan(u, v);
+    eraseAt(edges(u), o);
+    eraseAt(edata(u), o);
     M--;
+  }
+
+  void removeEdges(K u) {
+    if (!hasVertex(u)) return;
+    M -= edges(u).size();
+    edges(u).clear();
+    edata(u).clear();
+  }
+
+  void removeInEdges(K v) {
+    if (!hasVertex(v)) return;
+    for (auto&& p : vto)
+      if (hasEdge(p.first, v)) removeEdge(p.first, v);
+  }
+
+  void removeVertex(K u) {
+    if (!hasVertex(u)) return;
+    removeEdges(u);
+    removeInEdges(u);
+    vto.erase(u);
+    N--;
   }
 };

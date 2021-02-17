@@ -222,6 +222,25 @@ const char* testErrorAbs() {
 }
 
 
+const char* testTranspose() {
+  DiGraph<> g;
+  g.addEdge(1, 2);
+  g.addEdge(2, 4);
+  g.addEdge(4, 3);
+  g.addEdge(3, 1);
+  auto h = transpose(g);
+  if (!(
+   h.hasEdge(2, 1) &&
+   h.hasEdge(4, 2) &&
+   h.hasEdge(3, 4) &&
+   h.hasEdge(1, 3) &&
+   h.order() == 4 &&
+   h.size() == 4
+  )) return "transpose";
+  return NULL;
+}
+
+
 void testAll() {
   vector<const char*> ts = {
     testCeilDiv(),
@@ -235,7 +254,8 @@ void testAll() {
     testFill(),
     testSum(),
     testDotProduct(),
-    testErrorAbs()
+    testErrorAbs(),
+    testTranspose()
   };
   int n = 0;
   for (auto& t : ts) {
@@ -310,11 +330,11 @@ void runDotProduct() {
 }
 
 
-void runPageRank(DiGraph& g) {
-  float t;
-  vector<float> ranks;
-  t = measureDuration([&]() { ranks = pageRank(g); });
-  printf("[%07.1f ms] pageRank     \n", t); print(ranks);
+void runPageRank(DiGraph<>& g) {
+  // float t;
+  // vector<float> ranks;
+  // t = measureDuration([&]() { ranks = pageRank(g); });
+  // printf("[%07.1f ms] pageRank     \n", t); print(ranks);
   // t = measureDuration([&]() { pageRankOmp(ranks, g); });
   // printf("[%07.1f ms] pageRankOmp  = \n", t); // print(ranks, N);
   // t = measureDuration([&]() { pageRankCuda(ranks, g); });
@@ -327,14 +347,13 @@ void runPageRank(DiGraph& g) {
 int main(int argc, char **argv) {
   testAll();
   printf("Loading graph ...\n");
-  DiGraphTemp<> g;
+  DiGraph<> g;
   readMtx(g, argv[1]);
   print(g);
   runFill();
   runSum();
   runErrorAbs();
   runDotProduct();
-  runGraph();
   // runPageRank(g);
   return 0;
 }
