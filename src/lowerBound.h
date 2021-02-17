@@ -9,16 +9,16 @@ using std::distance;
 
 
 template <class I, class T>
-I lowerBound(I ib, I ie, const T& v) {
+auto lowerBound(I ib, I ie, const T& v) {
   return lower_bound(ib, ie, v);
 }
 
-template <class I, class T>
-I lowerBound(I i, const T& v) {
-  return lowerBound(i.begin(), i.end(), v);
+template <class C, class T>
+auto lowerBound(const C& x, const T& v) {
+  return lowerBound(x.begin(), x.end(), v);
 }
 
-template <class I, class T>
-int lowerBoundIndex(I i, const T& v) {
-  return distance(i.begin(), lowerBound(i, v));
+template <class C, class T>
+int lowerBoundAt(const C& x, const T& v) {
+  return distance(x.begin(), lowerBound(x, v));
 }

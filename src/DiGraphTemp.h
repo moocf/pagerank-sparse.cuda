@@ -23,17 +23,15 @@ class DiGraphTemp {
   private:
   auto ebgn(K u) { return get<0>(vto[u]).begin(); }
   auto eend(K u) { return get<0>(vto[u]).end(); }
-  auto ekbgn(K u) { return get<1>(vto[u]).begin(); }
-  auto ekend(K u) { return get<1>(vto[u]).end(); }
+  auto& edata(K u, K v) { return get<1>(vto[u]); }
   auto& vdata(K u) { return get<2>(vto[u]); }
-  auto& edata(K u, K v) { }
   int escan(K u, K v) { return scan(ebgn(u), eend(u), v) - ebgn(u); }
-  int esrch(K u, K v) { int i = escan(u, v); return i == estop(i)? -1 : i; }
+  int esrch(K u, K v) { int i = escan(u, v); return i == eend(u)-ebgn(u)? -1 : i; }
 
   public:
   int order() { return N; }
   int size() { return M; }
-  bool empty() { return N == 0; }
+  bool empty() { return order() == 0; }
 
   bool hasVertex(K u) { return vto.find(u) != vto.end(); }
   bool hasEdge(K u, K v) { return hasVertex(u) && hasVertex(v) && esrch(u, v) >= 0; }
@@ -52,9 +50,9 @@ class DiGraphTemp {
   }
 
   V vertexData(K u) { return hasVertex(u)? vdata(u) : V(); }
-  E edgeData(K u, K v) { return hasEdge(u, v)? edata(u, v) : E(); }
+  E edgeData(K u, K v) { return hasEdge(u, v)? edata(u)[escan(u, v)] : E(); }
   void setVertexData(K u, V d) { if (hasVertex(u)) vdata(u) = d; }
-  void setEdgeData(K u, K v, V d) { if (hasEdge(u, v)) edata(u, v) = d; }
+  void setEdgeData(K u, K v, V d) { if (hasEdge(u, v)) edata(u)[escan(u, v)] = d; }
 
   void addVertex(K u, V d=V()) {
     if (hasVertex(u)) return;
@@ -64,13 +62,16 @@ class DiGraphTemp {
 
   void addEdge(K u, K v, E d=E()) {
     if (hasEdge(u, v)) return;
-    edges(u).push_back({v, d});
+    edges(u).push_back(v);
+    edata(u).push_back(d);
     M++;
   }
 
   void removeEdge(K u, K v) {
     if (!hasEdge(u, v)) return;
-    erase(edges(u), escan(u, v));
+    int o = escan(u, v);
+    eraseAt(edges(u), o);
+    eraseAt(edata(u), o);
     M--;
   }
 
@@ -78,6 +79,7 @@ class DiGraphTemp {
     if (!hasVertex(u)) return;
     M -= edges(u).size();
     edges(u).clear();
+    edata(u).clear();
   }
 
   void removeInEdges(K v) {
@@ -94,3 +96,27 @@ class DiGraphTemp {
     N--;
   }
 };
+
+
+
+void runGraph() {
+  DiGraphTemp<> g;
+  g.addEdge(1, 2);
+  g.addEdge(2, 4);
+  g.addEdge(4, 3);
+  g.addEdge(3, 1);
+  g.addEdge(2, 5);
+  g.addEdge(4, 5);
+  g.addEdge(4, 7);
+  g.addEdge(5, 6);
+  g.addEdge(6, 8);
+  g.addEdge(8, 7);
+  g.addEdge(7, 5);
+  g.addEdge(5, 8);
+  printf("Order: %d\n", g.order());
+  printf("Size: %d\n", g.size());
+  for (auto&& u : g.vertices()) {
+    for (auto&& v : g.edges(u))
+      printf("%d -> %d\n", u, v);
+  }
+}

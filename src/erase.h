@@ -7,11 +7,11 @@ using std::vector;
 
 
 template <class T>
-void erase(vector<T>& x, int i) {
+void eraseAt(vector<T>& x, int i) {
   x.erase(x.begin()+i);
 }
 
 template <class T>
-void erase(vector<T>& x, int i, int I) {
-  x.erase(x.begin()+i, x.begin()+I);
+void eraseAt(vector<T>& x, int i, int n) {
+  x.erase(x.begin()+i, x.begin()+i+n);
 }

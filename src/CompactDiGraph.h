@@ -60,31 +60,27 @@ class CompactDiGraph {
   void eadj(int i, int n) { transform(ebgn(), eend(), ebgn(), [&](int o) { return o<i? o:o+n; }); }
 
   void vins(int o, K u, V d) {
-    insert(vto, o, vto[o]);
-    insert(vkeys, o, u);
-    insert(vdata, o, d);
+    insertAt(vto, o, vto[o]);
+    insertAt(vkeys, o, u);
+    insertAt(vdata, o, d);
     if (o != n()) eadj(o, 1);
   }
 
   void vdel(int o) {
-    erase(vto, o);
-    erase(vkeys, o);
-    erase(vdata, o);
+    eraseAt(vto, o);
+    eraseAt(vkeys, o);
+    eraseAt(vdata, o);
     if (o != n()) eadj(o, -1);
   }
 
   void eins(int o, int j, E d) {
-    insert(eto, o, j);
-    insert(edata, o, d);
+    insertAt(eto, o, j);
+    insertAt(edata, o, d);
   }
 
-  void edel(int o, int p) {
-    erase(eto, o, p);
-    erase(edata, o, p);
-  }
-
-  void edel(int o) {
-    edel(o, o+1);
+  void edel(int o, int n) {
+    eraseAt(eto, o, n);
+    eraseAt(edata, o, n);
   }
 
 
@@ -121,7 +117,7 @@ class CompactDiGraph {
   }
 
   void removeEdgesI(int i) {
-    edel(estrt(i), estop(i));
+    edel(estrt(i), degreeI(i));
     vadj(i+1, -degreeI(i));
   }
 

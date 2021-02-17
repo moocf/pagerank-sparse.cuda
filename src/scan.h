@@ -9,17 +9,17 @@ using std::distance;
 
 
 template <class I, class T>
-auto scan(const I& ib, const I& ie, const T& v) {
-  const I& iv = lower_bound(ib, ie, v);
+auto scan(I ib, I ie, const T& v) {
+  I iv = lower_bound(ib, ie, v);
   return iv != ie && *iv == v? iv : ie;
 }
 
-template <class I, class T>
-auto scan(const I& i, const T& v) {
-  return scan(i.begin(), i.end(), v);
+template <class C, class T>
+auto scan(const C& x, const T& v) {
+  return scan(x.begin(), x.end(), v);
 }
 
-template <class I, class T>
-int scanIndex(const I& i, const T& v) {
-  return distance(i.begin(), scan(i, v));
+template <class C, class T>
+int scanAt(const C& x, const T& v) {
+  return distance(x.begin(), scan(x, v));
 }

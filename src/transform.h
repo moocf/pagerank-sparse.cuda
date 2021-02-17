@@ -9,12 +9,12 @@ using std::iterator_traits;
 
 template <class I, class F>
 class TransformIterable {
-  const I &ib, &ie;
-  const F &fn;
+  const I ib, ie;
+  const F fn;
 
   public:
   class Iterator {
-    const F &fn;
+    const F fn;
     I it;
 
     public:
@@ -33,7 +33,7 @@ class TransformIterable {
     ITERATOR_COMPARISION(Iterator, a, b, a.it, b.it)
   };
 
-  TransformIterable(const I& ib, const I& ie, F fn) : ib(ib), ie(ie), fn(fn) {}
+  TransformIterable(I ib, I ie, const F& fn) : ib(ib), ie(ie), fn(fn) {}
   Iterator begin() { return Iterator(fn, ib); }
   Iterator end() { return Iterator(fn, ie); }
   Iterator rbegin() { return Iterator(fn, ie-1); }
@@ -43,12 +43,11 @@ class TransformIterable {
 
 
 template <class I, class F>
-auto transform(I ib, I ie, F fn) {
+auto transform(I ib, I ie, const F& fn) {
   return TransformIterable<I, F>(ib, ie, fn);
 }
 
-
-template <class I, class F>
-auto transform(I i, F fn) {
-  return TransformIterable<I, F>(i.begin(), i.end(), fn);
+template <class C, class F>
+auto transform(C& x, const F& fn) {
+  return transform(x.begin(), x.end(), fn);
 }

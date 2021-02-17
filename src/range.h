@@ -1,10 +1,10 @@
 #pragma once
-#include <limits>
 #include <vector>
 #include <iterator>
 #include <algorithm>
 #include "ceilDiv.h"
 #include "transform.h"
+#include <stdio.h>
 
 using std::random_access_iterator_tag;
 using std::vector;
@@ -92,13 +92,13 @@ class RangeIterable {
 
 
 template <class T>
-auto rangeIterable(T v, T V, T DV=1) {
+auto range(T v, T V, T DV=1) {
   int N = rangeSize(v, V, DV);
-  auto i = RangeIterable<T>(N);
-  return transform(i.begin(), i.end(), [=](int n) { return v+DV*n; });
+  auto r = RangeIterable<T>(N);
+  return transform(r, [=](int n) { return v+DV*n; });
 }
 
 template <class T>
-auto rangeIterable(T V) {
+auto range(T V) {
   return RangeIterable<T>(V);
 }

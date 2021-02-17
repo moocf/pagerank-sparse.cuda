@@ -1,24 +1,24 @@
 #pragma once
 #include <array>
 #include <vector>
-#include <stdio.h>
+#include <iostream>
 #include "_support.h"
 #include "DiGraph.h"
 
 using std::array;
 using std::vector;
-
+using std::cout;
 
 
 
 // Prints 1D array.
 template <class T>
 void print(T *x, int N) {
-  printf("{");
+  cout << "{";
   for (int i=0; i<N-1; i++)
-    printf("%.4f, ", x[i]);
-  if (N>0) printf("%.4f", x[N-1]);
-  printf("}\n");
+    cout << x[i] << ", ";
+  if (N>0) cout << x[N-1];
+  cout << "}\n";
 }
 
 
