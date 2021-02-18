@@ -1,5 +1,6 @@
-#include <array>
 #include <vector>
+#include <unordered_map>
+#include <iterator>
 #include <stdio.h>
 #include "src/main.h"
 
@@ -88,12 +89,30 @@ const char* testFilter() {
   auto e = filter(a, [](int v) { return v % 4 != 0; }); // 123567
   auto f = filter(e, [](int v) { return v % 3 != 0; }); // 1257
   auto g = filter(f, [](int v) { return v % 2 != 0; }); // 157
-  if (b.size() != 6) return "filterIBIE1";
-  if (c.size() != 4) return "filterIBIE2";
-  if (d.size() != 3) return "filterIBIE3";
-  if (e.size() != 6) return "filterC1";
-  if (f.size() != 4) return "filterC2";
-  if (g.size() != 3) return "filterC3";
+  if (distance(b.begin(), b.end()) != 6) return "filterIBIE1";
+  if (distance(c.begin(), c.end()) != 4) return "filterIBIE2";
+  if (distance(d.begin(), d.end()) != 3) return "filterIBIE3";
+  if (distance(e.begin(), e.end()) != 6) return "filterC1";
+  if (distance(f.begin(), f.end()) != 4) return "filterC2";
+  if (distance(g.begin(), g.end()) != 3) return "filterC3";
+  return NULL;
+}
+
+
+const char* testFind() {
+  vector<int> a {0, 1, 2, 3};
+  auto i = find(a.begin(), a.end(), 2)-a.begin();
+  auto j = find(a.begin(), a.end(), 9)-a.begin();
+  auto k = find(a, 2)-a.begin();
+  auto l = find(a, 9)-a.begin();
+  auto m = findAt(a, 2);
+  auto n = findAt(a, 9);
+  if (i != 2) return "findIBIE1";
+  if (j != 4) return "findIBIE2";
+  if (k != 2) return "findC1";
+  if (l != 4) return "findC2";
+  if (m != 2) return "findAt1";
+  if (n != -1) return "findAt2";
   return NULL;
 }
 
@@ -101,29 +120,17 @@ const char* testFilter() {
 const char* testLowerBound() {
   vector<int> a {0, 1, 2, 3};
   auto i = lowerBound(a.begin(), a.end(), 2)-a.begin();
-  auto j = lowerBound(a, 2)-a.begin();
-  auto k = lowerBoundAt(a, 2);
-  if (i != 2) return "lowerBoundIBIE";
-  if (j != 2) return "lowerBoundC";
-  if (k != 2) return "lowerBoundAt";
-  return NULL;
-}
-
-
-const char* testScan() {
-  vector<int> a {0, 1, 2, 3};
-  auto i = scan(a.begin(), a.end(), 2)-a.begin();
-  auto j = scan(a.begin(), a.end(), 9)-a.begin();
-  auto k = scan(a, 2)-a.begin();
-  auto l = scan(a, 9)-a.begin();
-  auto m = scanAt(a, 2);
-  auto n = scanAt(a, 9);
-  if (i != 2) return "scanIBIE1";
-  if (j != 4) return "scanIBIE2";
-  if (k != 2) return "scanC1";
-  if (l != 4) return "scanC2";
-  if (m != 2) return "scanAt1";
-  if (n != 4) return "scanAt2";
+  auto j = lowerBound(a.begin(), a.end(), 9)-a.begin();
+  auto k = lowerBound(a, 2)-a.begin();
+  auto l = lowerBound(a, 9)-a.begin();
+  auto m = lowerBoundAt(a, 2);
+  auto n = lowerBoundAt(a, 9);
+  if (i != 2) return "lowerBoundIBIE1";
+  if (j != 4) return "lowerBoundIBIE2";
+  if (k != 2) return "lowerBoundC1";
+  if (l != 4) return "lowerBoundC2";
+  if (m != 2) return "lowerBoundAt1";
+  if (n != 4) return "lowerBoundAt2";
   return NULL;
 }
 
@@ -157,67 +164,103 @@ const char* testRange() {
 
 
 const char* testFill() {
-  array<int, 4> x = {1, 2, 3, 4};
-  array<int, 4> a;
+  vector<int> a {1, 2, 3, 4};
+  vector<int> b {1, 2, 3, 4};
+  vector<int> c {1, 2, 3, 4};
+  vector<int> d {1, 2, 3, 4};
+  unordered_map<char, int> m {{'a', 1}, {'b', 2}, {'c', 3}};
+  unordered_map<char, int> n {{'a', 1}, {'b', 2}, {'c', 3}};
+  vector<int> is {0, 2};
+  vector<char> ks {'a', 'c'};
 
-  a = x;
-  fill(a, 4);
-  for (auto& v : a)
-    if (v != 4) return "fill";
+  fill(a, 9);
+  fillOmp(b, 9);
+  fillCuda(c, 9);
+  fill(m, 9);
+  fillAt(d, is, 9);
+  fillAt(n, ks, 9);
+  for (auto& v : a) if (v != 9) return "fillV";
+  for (auto& v : b) if (v != 9) return "fillOmpV";
+  for (auto& v : c) if (v != 9) return "fillCudaV";
+  for (auto& p : m) if (p.second != 9) return "fillM";
+  if (!(d[0]==9 && d[1]==2 && d[2]==9 && d[3]==4)) return "fillAtV";
+  if (!(n['a']==9 && n['b']==2 && n['c']==9)) return "fillAtM";
+  return NULL;
+}
 
-  a = x;
-  fillOmp(a, 4);
-  for (auto& v : a)
-    if (v != 4) return "fillOmp";
 
-  a = x;
-  fillCuda(a, 4);
-  for (auto& v : a)
-    if (v != 4) return "fillCuda";
+const char* testAdd() {
+  vector<int> a {1, 2, 3, 4};
+  vector<int> b {1, 2, 3, 4};
+  vector<int> c {1, 2, 3, 4};
+  vector<int> d {1, 2, 3, 4};
+  unordered_map<char, int> m {{'a', 1}, {'b', 2}, {'c', 3}};
+  unordered_map<char, int> n {{'a', 1}, {'b', 2}, {'c', 3}};
+  vector<int> is {0, 2};
+  vector<char> ks {'a', 'c'};
+
+  add(a, 1);
+  addOmp(b, 1);
+  addCuda(c, 1);
+  add(m, 1);
+  addAt(d, is, 1);
+  addAt(n, ks, 1);
+  if (!(a[0]==2 && a[1]==3 && a[2]==4 && a[3]==5)) return "addV";
+  if (!(b[0]==2 && b[1]==3 && b[2]==4 && b[3]==5)) return "addOmpV";
+  if (!(c[0]==2 && c[1]==3 && c[2]==4 && c[3]==5)) return "addCudaV";
+  if (!(m['a']==2 && m['b']==3 && m['c']==4)) return "addM";
+  if (!(d[0]==2 && d[1]==2 && d[2]==4 && d[3]==4)) return "addAtV";
+  if (!(n['a']==2 && n['b']==2 && n['c']==4)) return "addAtM";
   return NULL;
 }
 
 
 const char* testSum() {
-  array<int, 4> x = {1, 2, 3, 4};
-  int a;
+  vector<int> a {1, 2, 3, 4};
+  unordered_map<char, int> m {{'a', 1}, {'b', 2}, {'c', 3}};
+  vector<int> is {0, 2};
+  vector<char> ks {'a', 'c'};
 
-  a = sum(x);
-  if (a != 10) return "sum";
-
-  a = sumOmp(x);
-  if (a != 10) return "sumOmp";
-
-  a = sumCuda(x);
-  if (a != 10) return "sumCuda";
+  int p = sum(a);
+  int q = sumOmp(a);
+  int r = sumCuda(a);
+  int s = sum(m);
+  int t = sumAt(a, is);
+  int u = sumAt(m, ks);
+  if (p != 10) return "sumV";
+  if (q != 10) return "sumOmpV";
+  if (r != 10) return "sumCudaV";
+  if (s != 6) return "sumM";
+  if (t != 4) return "sumAtV";
+  if (u != 4) return "sumAtM";
   return NULL;
 }
 
 
 const char* testDotProduct() {
-  array<int, 4> x = {1, 2, 3, 4};
-  array<int, 4> y = {1, 0, 1, 0};
-  int a;
+  vector<int> x {1, 2, 3, 4};
+  vector<int> y {1, 0, 1, 0};
 
-  a = dotProduct(x, y);
+  int a = dotProduct(x, y);
+  int b = dotProductCuda(x, y);
   if (a != 4) return "dotProduct";
-
-  a = dotProductCuda(x, y);
-  if (a != 4) return "dotProductCuda";
+  if (b != 4) return "dotProductCuda";
   return NULL;
 }
 
 
 const char* testErrorAbs() {
-  array<int, 4> x = {1, 2, 3, 4};
-  array<int, 4> y = {1, 1, 3, 5};
-  int a;
+  vector<int> x {1, 2, 3, 4};
+  vector<int> y {1, 1, 3, 5};
+  unordered_map<char, int> m {{'a', 1}, {'b', 2}, {'c', 3}};
+  unordered_map<char, int> n {{'a', 1}, {'b', 1}, {'c', 4}};
 
-  a = errorAbs(x, y);
-  if (a != 2) return "errorAbs";
-
-  a = errorAbsCuda(x, y);
-  if (a != 2) return "errorAbsCuda";
+  int a = errorAbs(x, y);
+  int b = errorAbsCuda(x, y);
+  int c = errorAbs(m, n);
+  if (a != 2) return "errorAbsV";
+  if (b != 2) return "errorAbsCudaV";
+  if (c != 2) return "errorAbsM";
   return NULL;
 }
 
@@ -247,11 +290,12 @@ void testAll() {
     testErase(),
     testInsert(),
     testFilter(),
+    testFind(),
     testLowerBound(),
-    testScan(),
     testRange(),
     testTransform(),
     testFill(),
+    testAdd(),
     testSum(),
     testDotProduct(),
     testErrorAbs(),
@@ -330,15 +374,15 @@ void runDotProduct() {
 }
 
 
-void runPageRank(DiGraph<>& g) {
-  // float t;
-  // vector<float> ranks;
-  // t = measureDuration([&]() { ranks = pageRank(g); });
-  // printf("[%07.1f ms] pageRank     \n", t); print(ranks);
+void runPageRank(IndexedDiGraph<>& g) {
+  float t;
+  vector<float> ranks;
+  t = measureDuration([&]() { ranks = pageRank(g); });
+  printf("[%07.1f ms] pageRank\n", t); print(ranks);
   // t = measureDuration([&]() { pageRankOmp(ranks, g); });
-  // printf("[%07.1f ms] pageRankOmp  = \n", t); // print(ranks, N);
+  // printf("[%07.1f ms] pageRankOmp  \n", t); // print(ranks, N);
   // t = measureDuration([&]() { pageRankCuda(ranks, g); });
-  // printf("[%07.1f ms] pageRankCuda = \n", t); // print(ranks, N);
+  // printf("[%07.1f ms] pageRankCuda \n", t); // print(ranks, N);
 }
 
 
@@ -347,13 +391,13 @@ void runPageRank(DiGraph<>& g) {
 int main(int argc, char **argv) {
   testAll();
   printf("Loading graph ...\n");
-  DiGraph<> g;
+  IndexedDiGraph<> g;
   readMtx(g, argv[1]);
   print(g);
   runFill();
   runSum();
   runErrorAbs();
   runDotProduct();
-  // runPageRank(g);
+  runPageRank(g);
   return 0;
 }

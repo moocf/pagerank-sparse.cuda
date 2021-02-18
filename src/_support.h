@@ -44,28 +44,36 @@ struct Identity {
   pointer operator->() { return ae; }
 #endif
 
-#ifndef ITERATOR_NEXTR
-#define ITERATOR_NEXTR(It, ie, de) \
+#ifndef ITERATOR_NEXT
+#define ITERATOR_NEXTP(It, ie)  \
   It& operator++() { ie; return *this; }  \
+  It operator++(int) { It a = *this; ++(*this); return a; }
+#define ITERATOR_NEXTN(It, de) \
   It& operator--() { de; return *this; }  \
-  It operator++(int) { It a = *this; ++(*this); return a; } \
   It operator--(int) { It a = *this; --(*this); return a; }
+#define ITERATOR_NEXT(It, ie, de) \
+  ITERATOR_NEXTP(It, ie) \
+  ITERATOR_NEXTN(It, de)
 #endif
 
-#ifndef ITERATOR_ADVANCER
-#define ITERATOR_ADVANCER(It, i, fe, be) \
-  It& operator+=(difference_type i) { fe; return *this; } \
+#ifndef ITERATOR_ADVANCE
+#define ITERATOR_ADVANCEP(It, i, fe) \
+  It& operator+=(difference_type i) { fe; return *this; }
+#define ITERATOR_ADVANCEN(It, i, be) \
   It& operator-=(difference_type i) { be; return *this; }
+#define ITERATOR_ADVANCE(It, i, fe, be) \
+  ITERATOR_ADVANCEP(It, i, fe) \
+  ITERATOR_ADVANCEN(It, i, be)
 #endif
 
-#ifndef ITERATOR_ADVANCEP
-#define ITERATOR_ADVANCEP(It, a, b, ...)  \
+#ifndef ITERATOR_ARITHMETICP
+#define ITERATOR_ARITHMETICP(It, a, b, ...)  \
   friend It operator+(const It& a, difference_type b) { return It(__VA_ARGS__); } \
   friend It operator+(difference_type b, const It& a) { return It(__VA_ARGS__); }
 #endif
 
-#ifndef ITERATOR_ADVANCEN
-#define ITERATOR_ADVANCEN(It, a, b, ...) \
+#ifndef ITERATOR_ARITHMETICN
+#define ITERATOR_ARITHMETICN(It, a, b, ...) \
   friend It operator-(const It& a, difference_type b) { return It(__VA_ARGS__); } \
   friend It operator-(difference_type b, const It& a) { return It(__VA_ARGS__); }
 #endif

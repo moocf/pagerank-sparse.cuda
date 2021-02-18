@@ -7,8 +7,9 @@
 #include "IGraph.h"
 #include "filter.h"
 #include "range.h"
-#include "scan.h"
+#include "find.h"
 #include "transform.h"
+#include "lowerBound.h"
 #include "insert.h"
 #include "erase.h"
 #include <stdio.h>
@@ -17,6 +18,7 @@ using std::tuple;
 using std::vector;
 using std::min;
 using std::count;
+using std::find;
 using std::lower_bound;
 using std::transform;
 
@@ -46,12 +48,12 @@ class CompactDiGraph : public IGraph<K, V, E> {
   auto vend(int i) { return vbgn()+i+1; }
   auto ebgn(int i) { return ebgn()+estrt(i); }
   auto eend(int i) { return ebgn()+estop(i); }
-  int escan(int i, int j) { return scan(ebgn(i), eend(i), j) - ebgn(); }
+  int escan(int i, int j) { return find(ebgn(i), eend(i), j) - ebgn(); }
   int esrch(int i, int j) { int o = escan(i, j); return o == estop(i)? -1 : o; }
   bool hasv(int i) { return i < n(); }
   bool hase(int i, int j) { return hasv(i) && hasv(j) && esrch(i, j) >= 0; }
 
-  int vi(K u) { return scanAt(vkeys, u); }
+  int vi(K u) { return find(vkeys, u) - vkeys.begin(); }
   int ei(K u, K v) { return escan(vi(u), vi(v)); }
   K vk(int i) { return vkeys[i]; }
 

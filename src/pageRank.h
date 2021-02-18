@@ -1,14 +1,21 @@
 #pragma once
 #include <vector>
+#include <unordered_map>
+#include <algorithm>
 #include <utility>
-#include <cmath>
+#include <memory>
 #include <omp.h>
 #include "_cuda.h"
+#include "add.h"
 #include "fill.h"
 #include "DiGraph.h"
 #include "errorAbs.h"
 
-using namespace std;
+using std::vector;
+using std::unordered_map;
+using std::unique_ptr;
+using std::swap;
+using std::max;
 
 
 
@@ -28,40 +35,52 @@ struct pageRankOptions {
 
 
 // Finds rank of nodes in graph.
-template <class T>
-void pageRankPush(DiGraph& x, T p, T r, vector<T>& a) {
-  int S = x.span(), N = x.order();
-  for (int j=0; j<S; j++)
-    if (x.hasVertex(j)) a[j] += p*r/N;
-}
-
-
-template <class T>
-void pageRankPush(vector<int>& es, T p, T r, vector<T>& a) {
-  int d = es.size();
-  for (int j : es)
-    a[j] += p*r/d;
-}
-
-
-template <class T>
-void pageRankStep(DiGraph& x, T p, vector<T>& r, vector<T>& a) {
-  int S = x.span(), N = x.order();
+template <class K, class L, class M, class T>
+void pageRankStep(DiGraph<K, L, M>& x, T p, unordered_map<K, T>& r, unordered_map<K, T>& a) {
+  int N = x.order();
   fill(a, (1-p)/N);
-  for (int i=0; i<S; i++) {
-    if (!x.hasVertex(i)) continue;
-    int d = x.degree(i);
-    if (d == 0) pageRankPush(x, p, r[i], a);
-    else pageRankPush(x.edges(i), p, r[i], a);
+  for (auto&& u : x.vertices()) {
+    int d = x.degree(u);
+    if (d > 0) addAt(a, x.edges(u), p*r[u]/d);
+    else addAt(a, x.vertices(), p*r[u]/N);
   }
 }
 
 
-template <class T>
-vector<T>& pageRank(DiGraph& x, T p, T E) {
-  int S = x.span(), N = x.order();
-  vector<T>& r = *new vector<T>(S);
-  vector<T>& a = *new vector<T>(S);
+template <class K, class L, class M, class T>
+auto& pageRank(DiGraph<K, L, M>& x, T p, T E) {
+  int N = x.order();
+  auto& r = *new unordered_map<K, T>(N);
+  auto& a = *new unordered_map<K, T>(N);
+  fillAt(r, x.vertices(), T(1)/N);
+  while (1) {
+    pageRankStep(x, p, r, a);
+    T e = errorAbs(a, r);
+    if (e < E) break;
+    swap(a, r);
+  }
+  return a;
+}
+
+
+template <class K, class L, class M, class T>
+void pageRankStep(IndexedDiGraph<K, L, M>& x, T p, vector<T>& r, vector<T>& a) {
+  int N = x.order(), S = x.span();
+  fill(a, (1-p)/N);
+  for (int u=0; u<S; u++) {
+    if (!x.hasVertex(u)) continue;
+    int d = x.degree(u);
+    if (d > 0) addAt(a, x.edges(u), p*r[u]/d);
+    else add(a, p*r[u]/N);
+  }
+}
+
+
+template <class K, class L, class M, class T>
+auto& pageRank(IndexedDiGraph<K, L, M>& x, T p, T E) {
+  int N = x.order(), S = x.span();
+  auto& r = *new vector<T>(S);
+  auto& a = *new vector<T>(S);
   fill(r, T(1)/N);
   while (1) {
     pageRankStep(x, p, r, a);
@@ -69,43 +88,70 @@ vector<T>& pageRank(DiGraph& x, T p, T E) {
     if (e < E) break;
     swap(a, r);
   }
-  return r;
+  return a;
 }
 
 
-template <class T=float>
-vector<T>& pageRank(DiGraph& x, pageRankOptions<T> o=pageRankOptions<T>()) {
+template <class K, class L, class M, class T>
+void pageRankStep(CompactDiGraph<K, L, M>& x, T p, vector<T>& r, vector<T>& a) {
+  int N = x.order();
+  fill(a, (1-p)/N);
+  for (int i=0; i<N; i++) {
+    int d = x.degreeI(i);
+    if (d > 0) addAt(a, x.edgesI(i), p*r[i]/d);
+    else add(a, p*r[i]/N);
+  }
+}
+
+
+template <class K, class L, class M, class T>
+auto& pageRank(CompactDiGraph<K, L, M>& x, T p, T E) {
+  int N = x.order();
+  auto& r = *new vector<T>(N);
+  auto& a = *new vector<T>(N);
+  fill(r, T(1)/N);
+  while (1) {
+    pageRankStep(x, p, r, a);
+    T e = errorAbs(a, r);
+    if (e < E) break;
+    swap(a, r);
+  }
+  return a;
+}
+
+
+template <class G, class T=float>
+auto& pageRank(G& x, pageRankOptions<T> o=pageRankOptions<T>()) {
   return pageRank(x, o.damping, o.convergence);
 }
 
 
 
 
-template <class T>
-void pageRankPullStep(DiGraph& x, vector<T>& c, vector<T>& a) {
-  int S = x.span();
-  for (int i=0; i<S; i++) {
-    if (!x.hasVertex(i)) continue;
-    a[i] = sumAt(c, x.edges(i));
-  }
-}
+// template <class T>
+// void pageRankPullStep(DiGraph& x, vector<T>& c, vector<T>& a) {
+//   int S = x.span();
+//   for (int i=0; i<S; i++) {
+//     if (!x.hasVertex(i)) continue;
+//     a[i] = sumAt(c, x.edges(i));
+//   }
+// }
 
 
-template <class T>
-void pageRankPullPostprocess(vector<T>& a, vector<T>& d, T p, T q) {
+// template <class T>
+// void pageRankPullPostprocess(vector<T>& a, vector<T>& d, T p, T q) {
+// }
 
-}
 
-
-template <class T>
-vector<T>& pageRankPull(DiGraph& x, T p,T E) {
-  int S = x.span(), N = x.order();
-  vector<T>& r = *new vector<T>(S);
-  vector<T>& a = *new vector<T>(S);
-  fill(r, T(1)/N);
-  while (1) {
-  }
-}
+// template <class T>
+// vector<T>& pageRankPull(DiGraph& x, T p,T E) {
+//   int S = x.span(), N = x.order();
+//   vector<T>& r = *new vector<T>(S);
+//   vector<T>& a = *new vector<T>(S);
+//   fill(r, T(1)/N);
+//   while (1) {
+//   }
+// }
 
 
 template <class T>

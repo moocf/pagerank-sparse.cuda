@@ -1,14 +1,13 @@
 #pragma once
 #include <cmath>
-#include <array>
 #include <vector>
+#include <unordered_map>
 #include <algorithm>
 #include <memory>
 #include "_cuda.h"
 #include "ceilDiv.h"
 #include "sum.h"
 
-using std::array;
 using std::vector;
 using std::unique_ptr;
 using std::abs;
@@ -17,7 +16,7 @@ using std::max;
 
 
 
-// Finds absolute error between 2 vectors (arrays).
+// Finds absolute error between 2 vectors.
 template <class T>
 T errorAbs(T *x, T *y, int N) {
   T a = T();
@@ -26,16 +25,17 @@ T errorAbs(T *x, T *y, int N) {
   return a;
 }
 
-
-template <class T, size_t N>
-T errorAbs(array<T, N>& x, array<T, N>& y) {
-  return errorAbs(x.data(), y.data(), x.size());
-}
-
-
 template <class T>
 T errorAbs(vector<T>& x, vector<T>& y) {
   return errorAbs(x.data(), y.data(), x.size());
+}
+
+template <class K, class T>
+T errorAbs(unordered_map<K, T>& x, unordered_map<K, T>& y) {
+  T a = T();
+  for (auto& p : x)
+    a += abs(p.second - y[p.first]);
+  return a;
 }
 
 
@@ -49,13 +49,6 @@ T errorAbsOmp(T *x, T *y, int N) {
     a += abs(x[i] - y[i]);
   return a;
 }
-
-
-template <class T, size_t N>
-T errorAbsOmp(array<T, N>& x, array<T, N>& y) {
-  return errorAbsOmp(x.data(), y.data(), x.size());
-}
-
 
 template <class T>
 T errorAbsOmp(vector<T>& x, vector<T>& y) {
@@ -108,13 +101,6 @@ T errorAbsCuda(T *x, T *y, int N) {
   TRY( cudaFree(aD) );
   return sum(a.get(), blocks);
 }
-
-
-template <class T, size_t N>
-T errorAbsCuda(array<T, N>& x, array<T, N>& y) {
-  return errorAbsCuda(x.data(), y.data(), N);
-}
-
 
 template <class T>
 T errorAbsCuda(vector<T>& x, vector<T>& y) {

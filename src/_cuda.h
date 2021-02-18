@@ -7,6 +7,7 @@
 
 
 #ifndef _THREADS
+/** Default threads per block. */
 #define _THREADS 64
 #endif
 
@@ -14,16 +15,16 @@
 
 
 #ifndef TRY_CUDA
-inline void try_cuda(cudaError err, const char* exp, const char* func, int line, const char* file) {
-    if (err == cudaSuccess) return;
-    fprintf(stderr,
-        "%s: %s\n"
-        "  in expression %s\n"
-        "  at %s:%d in %s\n",
-        cudaGetErrorName(err), cudaGetErrorString(err),
-        exp,
-        func, line, file);
-    exit(err);
+void try_cuda(cudaError err, const char* exp, const char* func, int line, const char* file) {
+  if (err == cudaSuccess) return;
+  fprintf(stderr,
+      "%s: %s\n"
+      "  in expression %s\n"
+      "  at %s:%d in %s\n",
+      cudaGetErrorName(err), cudaGetErrorString(err),
+      exp,
+      func, line, file);
+  exit(err);
 }
 
 // Prints an error message and exits, if CUDA expression fails.

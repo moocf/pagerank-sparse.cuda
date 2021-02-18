@@ -1,16 +1,16 @@
 #pragma once
 #include <tuple>
 #include <vector>
-#include <map>
+#include <unordered_map>
 #include <utility>
 #include "_support.h"
 #include "IGraph.h"
-#include "scan.h"
+#include "find.h"
 #include "transform.h"
 
 using std::tuple;
 using std::vector;
-using std::map;
+using std::unordered_map;
 using std::get;
 
 
@@ -18,7 +18,7 @@ using std::get;
 
 template <class K=int, class V=NONE, class E=NONE>
 class DiGraph : public IGraph<K, V, E> {
-  map<K, tuple<vector<K>, vector<E>, V>> vto;
+  unordered_map<K, tuple<vector<K>, vector<E>, V>> vto;
   int N = 0, M = 0;
 
   // Cutie helpers
@@ -27,7 +27,7 @@ class DiGraph : public IGraph<K, V, E> {
   auto eend(K u) { return get<0>(vto[u]).end(); }
   auto& edata(K u) { return get<1>(vto[u]); }
   auto& vdata(K u) { return get<2>(vto[u]); }
-  int escan(K u, K v) { return scan(ebgn(u), eend(u), v) - ebgn(u); }
+  int escan(K u, K v) { return find(ebgn(u), eend(u), v) - ebgn(u); }
   int esrch(K u, K v) { int i = escan(u, v); return i == eend(u)-ebgn(u)? -1 : i; }
 
 

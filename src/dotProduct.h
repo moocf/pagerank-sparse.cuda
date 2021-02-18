@@ -1,5 +1,4 @@
 #pragma once
-#include <array>
 #include <vector>
 #include <algorithm>
 #include <memory>
@@ -8,7 +7,6 @@
 #include "ceilDiv.h"
 #include "sum.h"
 
-using std::array;
 using std::vector;
 using std::unique_ptr;
 using std::max;
@@ -16,7 +14,7 @@ using std::max;
 
 
 
-// Finds sum of element-by-element product of 2 vectors (arrays).
+// Finds sum of element-by-element product of 2 vectors.
 template <class T>
 T dotProduct(T *x, T *y, int N) {
   T a = T();
@@ -24,13 +22,6 @@ T dotProduct(T *x, T *y, int N) {
     a += x[i] * y[i];
   return a;
 }
-
-
-template <class T, size_t N>
-T dotProduct(array<T, N>& x, array<T, N>& y) {
-  return dotProduct(x.data(), y.data(), x.size());
-}
-
 
 template <class T>
 T dotProduct(vector<T>& x, vector<T>& y) {
@@ -48,13 +39,6 @@ T dotProductOmp(T *x, T *y, int N) {
     a += x[i] * y[i];
   return a;
 }
-
-
-template <class T, size_t N>
-T dotProductOmp(array<T, N>& x, array<T, N>& y) {
-  return dotProductOmp(x.data(), y.data(), x.size());
-}
-
 
 template <class T>
 T dotProductOmp(vector<T>& x, vector<T>& y) {
@@ -107,13 +91,6 @@ T dotProductCuda(T *x, T *y, int N) {
   TRY( cudaFree(aD) );
   return sum(a.get(), blocks);
 }
-
-
-template <class T, size_t N>
-T dotProductCuda(array<T, N>& x, array<T, N>& y) {
-  return dotProductCuda(x.data(), y.data(), N);
-}
-
 
 template <class T>
 T dotProductCuda(vector<T>& x, vector<T>& y) {

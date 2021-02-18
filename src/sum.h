@@ -1,12 +1,11 @@
 #pragma once
-#include <array>
 #include <vector>
+#include <unordered_map>
 #include <algorithm>
 #include <memory>
 #include <omp.h>
 #include "_cuda.h"
 
-using std::array;
 using std::vector;
 using std::unique_ptr;
 using std::max;
@@ -22,16 +21,39 @@ T sum(T *x, int N) {
   return a;
 }
 
-
-template <class T, size_t N>
-T sum(array<T, N>& x) {
-  return sum(x.data(), x.size());
-}
-
-
 template <class T>
 T sum(vector<T>& x) {
   return sum(x.data(), x.size());
+}
+
+template <class K, class T>
+T sum(unordered_map<K, T>& x) {
+  T a = T();
+  for (auto& p : x)
+    a += p.second;
+  return a;
+}
+
+
+template <class T, class C>
+T sumAt(T *x, C&& is) {
+  T a = T();
+  for (int i : is)
+    a += x[i];
+  return a;
+}
+
+template <class T, class C>
+T sumAt(vector<T>& x, C&& is) {
+  return sumAt(x.data(), is);
+}
+
+template <class K, class T, class C>
+T sumAt(unordered_map<K, T>& x, C&& ks) {
+  T a = T();
+  for (auto&& k : ks)
+    a += x[k];
+  return a;
 }
 
 
@@ -45,13 +67,6 @@ T sumOmp(T *x, int N) {
     a += x[i];
   return a;
 }
-
-
-template <class T, size_t N>
-T sumOmp(array<T, N>& x) {
-  return sumOmp(x.data(), x.size());
-}
-
 
 template <class T>
 T sumOmp(vector<T>& x) {
@@ -111,13 +126,6 @@ T sumCuda(T *x, int N) {
   TRY( cudaFree(aD) );
   return sum(a.get(), blocks);
 }
-
-
-template <class T, size_t N>
-T sumCuda(array<T, N>& x) {
-  return sumCuda(x.data(), x.size());
-}
-
 
 template <class T>
 T sumCuda(vector<T>& x) {

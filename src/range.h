@@ -75,10 +75,10 @@ class RangeIterable {
 
     Iterator(T n) : n(n) {}
     ITERATOR_DEREF(Iterator, n, n+i, NULL)
-    ITERATOR_NEXTR(Iterator, ++n, --n)
-    ITERATOR_ADVANCER(Iterator, i, n += i, n -= i)
-    ITERATOR_ADVANCEP(Iterator, a, b, a.n+b)
-    ITERATOR_ADVANCEN(Iterator, a, b, a.n-b)
+    ITERATOR_NEXT(Iterator, ++n, --n)
+    ITERATOR_ADVANCE(Iterator, i, n += i, n -= i)
+    ITERATOR_ARITHMETICP(Iterator, a, b, a.n+b)
+    ITERATOR_ARITHMETICN(Iterator, a, b, a.n-b)
     ITERATOR_COMPARISION(Iterator, a, b, a.n, b.n)
   };
 

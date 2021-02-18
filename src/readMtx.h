@@ -2,7 +2,6 @@
 #include <fstream>
 #include <sstream>
 #include <string>
-#include "DiGraph.h"
 
 using std::string;
 using std::ifstream;
@@ -12,8 +11,8 @@ using std::getline;
 
 
 
-template <class K, class V, class E>
-void readMtx(DiGraph<K, V, E>& a, string pth) {
+template <class G>
+void readMtx(G& a, string pth) {
   string ln;
   ifstream f(pth);
 

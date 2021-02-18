@@ -26,10 +26,10 @@ class TransformIterable {
 
     Iterator(const F& fn, I it) : fn(fn), it(it) {}
     ITERATOR_DEREF(Iterator, fn(*it), fn(it[i]), NULL)
-    ITERATOR_NEXTR(Iterator, ++it, --it)
-    ITERATOR_ADVANCER(Iterator, i, it += i, it -= i)
-    ITERATOR_ADVANCEP(Iterator, a, b, a.it+b)
-    ITERATOR_ADVANCEN(Iterator, a, b, a.it-b)
+    ITERATOR_NEXT(Iterator, ++it, --it)
+    ITERATOR_ADVANCE(Iterator, i, it += i, it -= i)
+    ITERATOR_ARITHMETICP(Iterator, a, b, a.it+b)
+    ITERATOR_ARITHMETICN(Iterator, a, b, a.it-b)
     ITERATOR_COMPARISION(Iterator, a, b, a.it, b.it)
   };
 
