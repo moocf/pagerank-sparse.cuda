@@ -4,7 +4,6 @@
 #include <unordered_map>
 #include <utility>
 #include "_support.h"
-#include "IGraph.h"
 #include "find.h"
 #include "transform.h"
 
@@ -17,63 +16,57 @@ using std::get;
 
 
 template <class K=int, class V=NONE, class E=NONE>
-class DiGraph : public IGraph<K, V, E> {
-  unordered_map<K, tuple<vector<K>, vector<E>, V>> vto;
-  int N = 0, M = 0;
+class DiGraph {
+  unordered_map<K, tuple<vector<K>, vector<E>, V>> ve;
+  int M = 0;
 
-  // Cutie helpers
+  // Cute helpers
   private:
-  auto ebgn(K u) { return get<0>(vto[u]).begin(); }
-  auto eend(K u) { return get<0>(vto[u]).end(); }
-  auto& edata(K u) { return get<1>(vto[u]); }
-  auto& vdata(K u) { return get<2>(vto[u]); }
-  int escan(K u, K v) { return find(ebgn(u), eend(u), v) - ebgn(u); }
-  int esrch(K u, K v) { int i = escan(u, v); return i == eend(u)-ebgn(u)? -1 : i; }
+  int n() { return ve.size(); }
+  auto eto(K u) { return get<0>(ve[u]); }
+  auto& edata(K u) { return get<1>(ve[u]); }
+  auto& vdata(K u) { return get<2>(ve[u]); }
+  int ei(K u, K v) { return findAt(eto(u), v); }
 
-
-  // Arduino-like facade
+  // Read operations
   public:
-  int order() { return N; }
-  int size() { return M; }
-  bool empty() { return order() == 0; }
+  int span()   { return n(); }
+  int order()  { return n(); }
+  int size()   { return M; }
+  bool empty() { return n() == 0; }
 
-  bool hasVertex(K u) { return vto.find(u) != vto.end(); }
-  bool hasEdge(K u, K v) { return hasVertex(u) && hasVertex(v) && esrch(u, v) >= 0; }
-  auto vertices() { return transform(vto, [](auto p) { return p.first; }); }
-  auto& edges(K u) { return get<0>(vto[u]); }
-  auto inEdges(K v) { return filter(vto, [=](auto p) { return esrch(p.first, v) >= 0; }); }
-  int degree(K u) { return edges(u).size(); }
+  bool hasVertex(K u)    { return ve.find(u) != ve.end(); }
+  bool hasEdge(K u, K v) { return hasVertex(u) && ei(u, v) >= 0; }
+  auto& edges(K u) { return eto(u); }
+  int degree(K u)  { return eto(u).size(); }
+  auto vertices()  { return transform(ve, [&](auto p) { return p.first; }); }
+  auto inEdges(K v)   { return filter(ve, [&](auto p) { return ei(p.first, v) >= 0; }); }
+  int inDegree(K v)  { return countIf(ve, [&](auto p) { return ei(p.first, v) >= 0; }); }
 
-  int inDegree(K v) {
-    int a = 0;
-    for (auto&& p : vto)
-      if (esrch(p.first, v) >= 0) a++;
-    return a;
-  }
-
-  V vertexData(K u) { return hasVertex(u)? vdata(u) : V(); }
-  E edgeData(K u, K v) { return hasEdge(u, v)? edata(u)[escan(u, v)] : E(); }
+  V vertexData(K u)         { return hasVertex(u)? vdata(u) : V(); }
   void setVertexData(K u, V d) { if (hasVertex(u)) vdata(u) = d; }
-  void setEdgeData(K u, K v, V d) { if (hasEdge(u, v)) edata(u)[escan(u, v)] = d; }
+  E edgeData(K u, K v)         { return hasEdge(u, v)? edata(u)[ei(u, v)] : E(); }
+  void setEdgeData(K u, K v, V d) { if (hasEdge(u, v)) edata(u)[ei(u, v)] = d; }
 
+  // Write operations
+  public:
   void addVertex(K u, V d=V()) {
     if (hasVertex(u)) return;
-    vto[u] = {{}, {}, V()};
-    N++;
+    ve[u] = {{}, {}, V()};
   }
 
   void addEdge(K u, K v, E d=E()) {
     if (hasEdge(u, v)) return;
     addVertex(u);
     addVertex(v);
-    edges(u).push_back(v);
+    eto(u).push_back(v);
     edata(u).push_back(d);
     M++;
   }
 
   void removeEdge(K u, K v) {
     if (!hasEdge(u, v)) return;
-    int o = escan(u, v);
+    int o = ei(u, v);
     eraseAt(edges(u), o);
     eraseAt(edata(u), o);
     M--;
@@ -81,22 +74,21 @@ class DiGraph : public IGraph<K, V, E> {
 
   void removeEdges(K u) {
     if (!hasVertex(u)) return;
-    M -= edges(u).size();
-    edges(u).clear();
+    M -= degree(u);
+    eto(u).clear();
     edata(u).clear();
   }
 
   void removeInEdges(K v) {
     if (!hasVertex(v)) return;
-    for (auto&& p : vto)
-      if (hasEdge(p.first, v)) removeEdge(p.first, v);
+    for (auto&& u : inEdges(v))
+      removeEdge(u, v);
   }
 
   void removeVertex(K u) {
     if (!hasVertex(u)) return;
     removeEdges(u);
     removeInEdges(u);
-    vto.erase(u);
-    N--;
+    ve.erase(u);
   }
 };

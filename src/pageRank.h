@@ -155,67 +155,66 @@ auto& pageRank(G& x, pageRankOptions<T> o=pageRankOptions<T>()) {
 
 
 template <class T>
-__global__ void pageRankKernel(bool *has, int *deg, int *vout, int *eout, int S, int N, T p, T E) {
+__global__ void pageRankKernel(int *e, T *a, T *r, int *vto, int *eto, int N, T p, T E) {
   DEFINE(t, b, B, G);
+
+  for (int u=t; u<N; u+=B) {
+    int d = vto[i+1]-vto[i];
+    if (d == 0) continue;
+    for (int j=b; j<G; j++) {
+      int v = eto[vto[u]+j];
+      a[v] += p*r/d;
+    }
+    cache[t] = dotProductKernelLoop(&w[N*j], r, N, t, B);
+    sumKernelReduce(cache, B, t);
+    if (t != 0) continue;
+    T wjr = cache[0];
+    a[j] = p*wjr + (1-p)/N;
+    T ej = abs(a[j] - r[j]);
+    if (ej >= E) atomicAdd(e, 1);
+  }
 }
-// template <class T>
-// __global__ void pageRankKernel(int *e, T *a, T *r, T *w, int N, T p, T E) {
-//   DEFINE(t, b, B, G);
-//   __shared__ T cache[_THREADS];
-
-//   for (int j=b; j<N; j+=G) {
-//     cache[t] = dotProductKernelLoop(&w[N*j], r, N, t, B);
-//     sumKernelReduce(cache, B, t);
-//     if (t != 0) continue;
-//     T wjr = cache[0];
-//     a[j] = p*wjr + (1-p)/N;
-//     T ej = abs(a[j] - r[j]);
-//     if (ej >= E) atomicAdd(e, 1);
-//   }
-// }
 
 
-// template <class T>
-// void pageRankCuda(T *a, T *w, int N, T p, T E) {
-//   int threads = _THREADS;
-//   int blocks = max(ceilDiv(N, threads), 1024);
-//   size_t W1 = N*N * sizeof(T);
-//   size_t A1 = N * sizeof(T);
-//   size_t E1 = 1 * sizeof(int);
-//   int e = 0;
+template <class T>
+void pageRankCuda(T *a, T *w, int N, T p, T E) {
+  int threads = _THREADS;
+  int blocks = max(ceilDiv(N, threads), 1024);
+  size_t W1 = N*N * sizeof(T);
+  size_t A1 = N * sizeof(T);
+  size_t E1 = 1 * sizeof(int);
+  int e = 0;
 
-//   int *eD;
-//   T *wD, *rD, *aD;
-//   TRY( cudaMalloc(&wD, W1) );
-//   TRY( cudaMalloc(&rD, A1) );
-//   TRY( cudaMalloc(&aD, A1) );
-//   TRY( cudaMalloc(&eD, E1) );
-//   TRY( cudaMemcpy(wD, w, W1, cudaMemcpyHostToDevice) );
+  int *eD;
+  T *wD, *rD, *aD;
+  TRY( cudaMalloc(&wD, W1) );
+  TRY( cudaMalloc(&rD, A1) );
+  TRY( cudaMalloc(&aD, A1) );
+  TRY( cudaMalloc(&eD, E1) );
+  TRY( cudaMemcpy(wD, w, W1, cudaMemcpyHostToDevice) );
 
-//   fillKernel<<<blocks, threads>>>(rD, N, T(1.0/N));
-//   while (1) {
-//     fillKernel<<<1, 1>>>(eD, 1, 0);
-//     pageRankKernel<<<blocks, threads>>>(eD, aD, rD, wD, N, p, E);
-//     TRY( cudaMemcpy(&e, eD, E1, cudaMemcpyDeviceToHost) );
-//     swap(aD, rD);
-//     if (!e) break;
-//   }
-//   TRY( cudaMemcpy(a, rD, A1, cudaMemcpyDeviceToHost) );
+  fillKernel<<<blocks, threads>>>(rD, N, T(1.0/N));
+  while (1) {
+    fillKernel<<<1, 1>>>(eD, 1, 0);
+    pageRankKernel<<<blocks, threads>>>(eD, aD, rD, wD, N, p, E);
+    TRY( cudaMemcpy(&e, eD, E1, cudaMemcpyDeviceToHost) );
+    swap(aD, rD);
+    if (!e) break;
+  }
+  TRY( cudaMemcpy(a, rD, A1, cudaMemcpyDeviceToHost) );
 
-//   TRY( cudaFree(wD) );
-//   TRY( cudaFree(rD) );
-//   TRY( cudaFree(aD) );
-//   TRY( cudaFree(eD) );
-// }
+  TRY( cudaFree(wD) );
+  TRY( cudaFree(rD) );
+  TRY( cudaFree(aD) );
+  TRY( cudaFree(eD) );
+}
 
+template <class T>
+void pageRankCuda(T *a, T *w, int N, pageRankOptions<T> o=pageRankOptions<T>()) {
+  pageRankCuda(a, w, N, o.damping, o.convergence);
+}
 
-// template <class T>
-// void pageRankCuda(T *a, T *w, int N, pageRankOptions<T> o=pageRankOptions<T>()) {
-//   pageRankCuda(a, w, N, o.damping, o.convergence);
-// }
-
-
-// template <class T>
-// void pageRankCuda(T *a, DenseDiGraph<T>& x, pageRankOptions<T> o=pageRankOptions<T>()) {
-//   pageRankCuda(a, x.weights, x.order, o);
-// }
+template <class T>
+void pageRankCuda(T *a, DenseDiGraph<T>& x, pageRankOptions<T> o=pageRankOptions<T>()) {
+  pageRankCuda(a, x.weights, x.order, o);
+}

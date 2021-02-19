@@ -18,7 +18,7 @@ using std::get;
 
 
 template <class K=int, class V=NONE, class E=NONE>
-class IndexedDiGraph : public IGraph<K, V, E> {
+class DiGraph : public IGraph<K, V, E> {
   vector<bool> vex;
   vector<vector<int>> eto;
   vector<vector<E>> edata;

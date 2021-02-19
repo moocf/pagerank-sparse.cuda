@@ -2,6 +2,7 @@
 #include "Graph.h"
 //#include "CompactGraph.h"
 #include "DiGraph.h"
+#include "DiGraphFac.h"
 #include "IndexedDiGraph.h"
 #include "CompactDiGraph.h"
 #include "add.h"

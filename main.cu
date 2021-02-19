@@ -378,7 +378,19 @@ void runPageRank(IndexedDiGraph<>& g) {
   float t;
   vector<float> ranks;
   t = measureDuration([&]() { ranks = pageRank(g); });
-  printf("[%07.1f ms] pageRank\n", t); print(ranks);
+  printf("[%07.1f ms] pageRankIndexed\n", t); print(ranks);
+  // t = measureDuration([&]() { pageRankOmp(ranks, g); });
+  // printf("[%07.1f ms] pageRankOmp  \n", t); // print(ranks, N);
+  // t = measureDuration([&]() { pageRankCuda(ranks, g); });
+  // printf("[%07.1f ms] pageRankCuda \n", t); // print(ranks, N);
+}
+
+
+void runPageRank(CompactDiGraph<>& g) {
+  float t;
+  vector<float> ranks;
+  t = measureDuration([&]() { ranks = pageRank(g); });
+  printf("[%07.1f ms] pageRankCompact\n", t); print(ranks);
   // t = measureDuration([&]() { pageRankOmp(ranks, g); });
   // printf("[%07.1f ms] pageRankOmp  \n", t); // print(ranks, N);
   // t = measureDuration([&]() { pageRankCuda(ranks, g); });
@@ -392,12 +404,15 @@ int main(int argc, char **argv) {
   testAll();
   printf("Loading graph ...\n");
   IndexedDiGraph<> g;
+  CompactDiGraph<> h;
   readMtx(argv[1], g);
+  readMtx(argv[1], h);
   print(g);
   runFill();
   runSum();
   runErrorAbs();
   runDotProduct();
   runPageRank(g);
+  runPageRank(h);
   return 0;
 }
