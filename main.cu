@@ -392,7 +392,7 @@ int main(int argc, char **argv) {
   testAll();
   printf("Loading graph ...\n");
   IndexedDiGraph<> g;
-  readMtx(g, argv[1]);
+  readMtx(argv[1], g);
   print(g);
   runFill();
   runSum();

@@ -12,20 +12,15 @@ using std::getline;
 
 
 template <class G>
-void readMtx(G& a, string pth) {
-  string ln;
-  ifstream f(pth);
-
-  // skip 1st line
-  getline(f, ln);
-
-  // read 2nd line
+void readMtx(string pth, G& a) {
   int r, c, sz;
+  ifstream f(pth);
+  string ln;
+
+  getline(f, ln);
   getline(f, ln);
   istringstream ls(ln);
   ls >> r >> c >> sz;
-
-  // read remaining lines (edges)
   while (getline(f, ln)) {
     int i, j; float w;
     ls = istringstream(ln);

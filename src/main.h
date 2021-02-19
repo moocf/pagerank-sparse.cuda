@@ -1,5 +1,5 @@
 #pragma once
-//#include "Graph.h"
+#include "Graph.h"
 //#include "CompactGraph.h"
 #include "DiGraph.h"
 #include "IndexedDiGraph.h"
@@ -18,7 +18,7 @@
 #include "pageRank.h"
 #include "print.h"
 #include "range.h"
-#include "readMtx.h"
+#include "read.h"
 #include "sum.h"
 #include "transform.h"
 #include "transpose.h"
