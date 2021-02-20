@@ -1,8 +1,10 @@
 #pragma once
 #include <iterator>
+#include <algorithm>
 
 using std::random_access_iterator_tag;
 using std::iterator_traits;
+using std::transform;
 
 
 
@@ -50,4 +52,14 @@ auto transform(I ib, I ie, const F& fn) {
 template <class C, class F>
 auto transform(C&& x, const F& fn) {
   return transform(x.begin(), x.end(), fn);
+}
+
+template <class I, class F>
+auto transformW(I ib, I ie, const F& fn) {
+  return transform(ib, ie, ib, fn);
+}
+
+template <class C, class F>
+auto transformW(C&& x, const F& fn) {
+  return transformW(x.begin(), x.end(), fn);
 }

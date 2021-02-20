@@ -13,8 +13,13 @@ auto find(const C& x, const T& v) {
   return find(x.begin(), x.end(), v);
 }
 
+template <class I, class T>
+int findAt(I ib, I ie, const T& v) {
+  auto i = find(ib, ie, v);
+  return i == ie? -1 : distance(ib, i);
+}
+
 template <class C, class T>
 int findAt(const C& x, const T& v) {
-  auto i = find(x.begin(), x.end(), v);
-  return i == x.end()? -1 : distance(x.begin(), i);
+  return findAt(x.begin(), x.end(), v);
 }

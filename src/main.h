@@ -1,9 +1,6 @@
 #pragma once
 #include "Graph.h"
-//#include "CompactGraph.h"
 #include "DiGraph.h"
-#include "DiGraphFac.h"
-#include "IndexedDiGraph.h"
 #include "CompactDiGraph.h"
 #include "add.h"
 #include "ceilDiv.h"
@@ -16,7 +13,7 @@
 #include "insert.h"
 #include "lowerBound.h"
 #include "measureDuration.h"
-#include "pageRank.h"
+// #include "pageRank.h"
 #include "print.h"
 #include "range.h"
 #include "read.h"
