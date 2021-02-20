@@ -5,6 +5,7 @@
 #include <utility>
 #include "_support.h"
 #include "count.h"
+#include "erase.h"
 #include "filter.h"
 #include "find.h"
 #include "range.h"
@@ -59,6 +60,44 @@ class DiGraph {
   void setVertexData(K u, V d) { if (hasVertex(u)) vdata(u) = d; }
   E edgeData(K u, K v)         { return hasEdge(u, v)? edata(u)[ei(u, v)] : E(); }
   void setEdgeData(K u, K v, E d) { if (hasEdge(u, v)) edata(u)[ei(u, v)] = d; }
+
+  // Generate operations
+  public:
+  auto sourceOffsets() {
+    int i = 0;
+    vector<int> a;
+    a.reserve(order()+2);
+    for (K u : vertices()) {
+      a.push_back(i);
+      i += degree(u);
+    }
+    a.push_back(i);
+    a.push_back(i);
+    return a;
+  }
+
+  auto destinationIndices() {
+    vector<int> a; // TODO
+    return a;
+  }
+
+  auto vertexData() {
+    vector<V> a;
+    a.reserve(order());
+    for (K u : vertices())
+      a.push_back(vertexData(u));
+    return a;
+  }
+
+  auto edgeData() {
+    vector<E> a;
+    a.reserve(size());
+    for (K u : vertices()) {
+      for (K v : edges(u))
+        a.push_back(edgeData(u, v));
+    }
+    return a;
+  }
 
   // Write operations
   public:
@@ -137,6 +176,9 @@ class DiGraph<int, V, E> {
   int size()   { return M; }
   bool empty() { return N == 0; }
   auto& base() { return *this; }
+
+  auto& vertexData() { return vdata; }
+  auto& edgeData() { return edata; }
 
   bool hasVertex(int u)      { return u < s() && vex[u]; }
   bool hasEdge(int u, int v) { return u < s() && ex(u, v); }

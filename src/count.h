@@ -1,7 +1,16 @@
 #pragma once
 #include <algorithm>
 
+using std::count;
 using std::count_if;
+
+
+
+
+template <class C, class T>
+int count(C&& x, const T& v) {
+  return count(x.begin(), x.end(), v);
+}
 
 
 

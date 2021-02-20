@@ -43,7 +43,6 @@ class TransformIterable {
   ITERABLE_SIZE(ie-ib)
 };
 
-
 template <class I, class F>
 auto transform(I ib, I ie, const F& fn) {
   return TransformIterable<I, F>(ib, ie, fn);
@@ -53,6 +52,9 @@ template <class C, class F>
 auto transform(C&& x, const F& fn) {
   return transform(x.begin(), x.end(), fn);
 }
+
+
+
 
 template <class I, class F>
 auto transformW(I ib, I ie, const F& fn) {

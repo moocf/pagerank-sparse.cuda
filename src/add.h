@@ -29,6 +29,28 @@ void add(unordered_map<K, T>& x, T v) {
 }
 
 
+
+
+template <class T>
+void add(T *a, T *x, T *y, int N) {
+  for (int i=0; i<N; i++)
+    a[i] = x[i] + y[i];
+}
+
+template <class T>
+void add(vector<T>& a, vector<T>& x, vector<T>& y) {
+  return add(a.data(), x.data(), y.data(), a.size());
+}
+
+template <class K, class T>
+void add(unordered_map<K, T>& a, unordered_map<K, T>& x, unordered_map<K, T> y) {
+  for (auto& p : x)
+    a[p.first] = x[p.first] + y[p.first];
+}
+
+
+
+
 template <class T, class C>
 void addAt(T *x, C&& is , T v) {
   for (int i : is)
@@ -98,4 +120,46 @@ void addCuda(T *a, int N, T v) {
 template <class T>
 void addCuda(vector<T>& x, T v) {
   addCuda(x.data(), x.size(), v);
+}
+
+
+
+
+template <class T>
+__device__ void addKernelLoop(T *a, T *x, T *y, int N, int i, int DI) {
+  for (; i<N; i+=DI)
+    a[i] = x[i] + y[i];
+}
+
+
+template <class T>
+__global__ void addKernel(T *a, T *x, T *y, int N) {
+  DEFINE(t, b, B, G);
+
+  addKernelLoop(a, x, y, N, B*b+t, G*B);
+}
+
+
+template <class T>
+void addCuda(T *a, T *x, T *y, int N) {
+  int threads = _THREADS;
+  int blocks = max(ceilDiv(N, threads), 1024);
+  size_t A1 = N * sizeof(T);
+
+  T *xD, *yD;
+  TRY( cudaMalloc(&xD, A1) );
+  TRY( cudaMalloc(&yD, A1) );
+  TRY( cudaMemcpy(xD, x, A1, cudaMemcpyHostToDevice) );
+  TRY( cudaMemcpy(yD, y, A1, cudaMemcpyHostToDevice) );
+
+  addKernel<<<blocks, threads>>>(xD, xD, yD, N);
+  TRY( cudaMemcpy(a, xD, A1, cudaMemcpyDeviceToHost) );
+
+  TRY( cudaFree(xD) );
+  TRY( cudaFree(yD) );
+}
+
+template <class T>
+void addCuda(vector<T>& a, vector<T>& x, vector<T>& y) {
+  addCuda(a.data(), x.data(), y.data(), a.size());
 }

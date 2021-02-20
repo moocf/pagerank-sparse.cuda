@@ -6,9 +6,12 @@
 #include <memory>
 #include <omp.h>
 #include "_cuda.h"
-#include "add.h"
-#include "fill.h"
 #include "DiGraph.h"
+#include "count.h"
+#include "add.h"
+#include "sum.h"
+#include "fill.h"
+#include "multiply.h"
 #include "errorAbs.h"
 
 using std::vector;
@@ -35,40 +38,11 @@ struct pageRankOptions {
 
 
 // Finds rank of nodes in graph.
-template <class K, class L, class M, class T>
-void pageRankStep(DiGraph<K, L, M>& x, T p, unordered_map<K, T>& r, unordered_map<K, T>& a) {
+template <class G, class T>
+void pageRankStep(vector<T>& a, vector<T>& r, G& x, T p) {
   int N = x.order();
   fill(a, (1-p)/N);
-  for (auto&& u : x.vertices()) {
-    int d = x.degree(u);
-    if (d > 0) addAt(a, x.edges(u), p*r[u]/d);
-    else addAt(a, x.vertices(), p*r[u]/N);
-  }
-}
-
-
-template <class K, class L, class M, class T>
-auto& pageRank(DiGraph<K, L, M>& x, T p, T E) {
-  int N = x.order();
-  auto& r = *new unordered_map<K, T>(N);
-  auto& a = *new unordered_map<K, T>(N);
-  fillAt(r, x.vertices(), T(1)/N);
-  while (1) {
-    pageRankStep(x, p, r, a);
-    T e = errorAbs(a, r);
-    if (e < E) break;
-    swap(a, r);
-  }
-  return a;
-}
-
-
-template <class K, class L, class M, class T>
-void pageRankStep(IndexedDiGraph<K, L, M>& x, T p, vector<T>& r, vector<T>& a) {
-  int N = x.order(), S = x.span();
-  fill(a, (1-p)/N);
-  for (int u=0; u<S; u++) {
-    if (!x.hasVertex(u)) continue;
+  for (int u : x.vertices()) {
     int d = x.degree(u);
     if (d > 0) addAt(a, x.edges(u), p*r[u]/d);
     else add(a, p*r[u]/N);
@@ -76,49 +50,20 @@ void pageRankStep(IndexedDiGraph<K, L, M>& x, T p, vector<T>& r, vector<T>& a) {
 }
 
 
-template <class K, class L, class M, class T>
-auto& pageRank(IndexedDiGraph<K, L, M>& x, T p, T E) {
+template <class G, class T>
+vector<T>& pageRank(G& x, T p, T E) {
   int N = x.order(), S = x.span();
-  auto& r = *new vector<T>(S);
   auto& a = *new vector<T>(S);
+  auto& r = *new vector<T>(S);
   fill(r, T(1)/N);
   while (1) {
-    pageRankStep(x, p, r, a);
+    pageRankStep(a, r, x, p);
     T e = errorAbs(a, r);
     if (e < E) break;
     swap(a, r);
   }
   return a;
 }
-
-
-template <class K, class L, class M, class T>
-void pageRankStep(CompactDiGraph<K, L, M>& x, T p, vector<T>& r, vector<T>& a) {
-  int N = x.order();
-  fill(a, (1-p)/N);
-  for (int i=0; i<N; i++) {
-    int d = x.degreeI(i);
-    if (d > 0) addAt(a, x.edgesI(i), p*r[i]/d);
-    else add(a, p*r[i]/N);
-  }
-}
-
-
-template <class K, class L, class M, class T>
-auto& pageRank(CompactDiGraph<K, L, M>& x, T p, T E) {
-  int N = x.order();
-  auto& r = *new vector<T>(N);
-  auto& a = *new vector<T>(N);
-  fill(r, T(1)/N);
-  while (1) {
-    pageRankStep(x, p, r, a);
-    T e = errorAbs(a, r);
-    if (e < E) break;
-    swap(a, r);
-  }
-  return a;
-}
-
 
 template <class G, class T=float>
 auto& pageRank(G& x, pageRankOptions<T> o=pageRankOptions<T>()) {
@@ -128,93 +73,131 @@ auto& pageRank(G& x, pageRankOptions<T> o=pageRankOptions<T>()) {
 
 
 
-// template <class T>
-// void pageRankPullStep(DiGraph& x, vector<T>& c, vector<T>& a) {
-//   int S = x.span();
-//   for (int i=0; i<S; i++) {
-//     if (!x.hasVertex(i)) continue;
-//     a[i] = sumAt(c, x.edges(i));
-//   }
-// }
+template <class G, class T>
+T pageRankTeleport(G& x, vector<T>& r, T p, int N) {
+  T a = (1-p)/N;
+  for (int u : x.vertices())
+    if (x.vertexData(u) == 0) a += p*r[u]/N;
+  return a;
+}
+
+template <class G, class T>
+void pageRankFactor(vector<T>& a, G& x, T p) {
+  int N = x.order();
+  auto& vdata = x.vertexData();
+  transform(vdata.begin(), vdata.end(), a.begin(), [=](int d) { return d>0? p/d : 0; });
+}
 
 
-// template <class T>
-// void pageRankPullPostprocess(vector<T>& a, vector<T>& d, T p, T q) {
-// }
+template <class G, class T>
+void pageRankPullStep(vector<T>& a, vector<T>& c, G& x, T p, T c0) {
+  for (int v : x.vertices())
+    a[v] = c0 + sumAt(c, x.edges(v));
+}
 
 
-// template <class T>
-// vector<T>& pageRankPull(DiGraph& x, T p,T E) {
-//   int S = x.span(), N = x.order();
-//   vector<T>& r = *new vector<T>(S);
-//   vector<T>& a = *new vector<T>(S);
-//   fill(r, T(1)/N);
-//   while (1) {
-//   }
-// }
+template <class G, class T>
+vector<T>& pageRankPull(G& x, T p, T E) {
+  int N = x.order(), S = x.span();
+  // int Z = count(x.vertexData(), 0)-(S-N);
+  // printf("Z: %d\n", Z);
+  T r0 = T(1)/N;
+  auto& r = *new vector<T>(S);
+  auto& f = *new vector<T>(S);
+  auto& c = *new vector<T>(S);
+  auto& a = *new vector<T>(S);
+  fillAt(r, x.vertices(), r0);
+  pageRankFactor(f, x, p);
+  while (1) {
+    T c0 = pageRankTeleport(x, r, p, N);
+    multiply(c, r, f);
+    pageRankPullStep(a, c, x, p, c0);
+    T e = errorAbs(a, r);
+    if (e < E) break;
+    swap(a, r);
+    r0 = c0;
+  }
+  return a;
+}
+
+template <class G, class T=float>
+auto& pageRankPull(G& x, pageRankOptions<T> o=pageRankOptions<T>()) {
+  return pageRankPull(x, o.damping, o.convergence);
+}
+
+
 
 
 template <class T>
-__global__ void pageRankKernel(int *e, T *a, T *r, int *vto, int *eto, int N, T p, T E) {
+__global__ void pageRankKernel(T *a, T *c, int *vfrom, int *efrom, int N) {
   DEFINE(t, b, B, G);
+  __shared__ T cache[_THREADS];
 
-  for (int u=t; u<N; u+=B) {
-    int d = vto[i+1]-vto[i];
-    if (d == 0) continue;
-    for (int j=b; j<G; j++) {
-      int v = eto[vto[u]+j];
-      a[v] += p*r/d;
-    }
-    cache[t] = dotProductKernelLoop(&w[N*j], r, N, t, B);
+  for (int v=b; v<N; v+=G) {
+    int ebgn = vfrom[v];
+    int ideg = vfrom[v+1]-vfrom[v];
+    cache[t] = sumAtKernelLoop(c, efrom+ebgn, ideg, t, B);
     sumKernelReduce(cache, B, t);
-    if (t != 0) continue;
-    T wjr = cache[0];
-    a[j] = p*wjr + (1-p)/N;
-    T ej = abs(a[j] - r[j]);
-    if (ej >= E) atomicAdd(e, 1);
+    a[v] = cache[0];
   }
 }
 
 
-template <class T>
-void pageRankCuda(T *a, T *w, int N, T p, T E) {
+template <class G, class T>
+vector<T>& pageRankCuda(G& x, vector<int>& odeg, T p, T E) {
+  int N = x.order(), M = x.size(), S = x.span();
   int threads = _THREADS;
   int blocks = max(ceilDiv(N, threads), 1024);
-  size_t W1 = N*N * sizeof(T);
-  size_t A1 = N * sizeof(T);
-  size_t E1 = 1 * sizeof(int);
-  int e = 0;
+  int E1 = blocks * sizeof(T);
+  int A1 = S * sizeof(T);
+  int VFROM1 = x.sourceOffsets().size() * sizeof(int);
+  int EFROM1 = x.destinationIndices().size() * sizeof(int);
 
-  int *eD;
-  T *wD, *rD, *aD;
-  TRY( cudaMalloc(&wD, W1) );
-  TRY( cudaMalloc(&rD, A1) );
-  TRY( cudaMalloc(&aD, A1) );
+  int Z = count(odeg, 0);
+  vector<T> e(blocks);
+  vector<T> f(S);
+  transform(odeg, f, [=](int d) { return d>0? p/d : p/N; });
+
+  T *eD, *fD, *rD, *cD, *aD;
+  int *vfromD, *efromD;
   TRY( cudaMalloc(&eD, E1) );
-  TRY( cudaMemcpy(wD, w, W1, cudaMemcpyHostToDevice) );
+  TRY( cudaMalloc(&fD, A1) );
+  TRY( cudaMalloc(&rD, A1) );
+  TRY( cudaMalloc(&cD, A1) );
+  TRY( cudaMalloc(&aD, A1) );
+  TRY( cudaMalloc(&vfromD, VFROM1) );
+  TRY( cudaMalloc(&efromD, EFROM1) );
+  TRY( cudaMemcpy(fD,      f.data(),               A1,     cudaMemcpyHostToDevice) );
+  TRY( cudaMemcpy(vfromD, &x.sourceOffsets(),      VFROM1, cudaMemcpyHostToDevice) );
+  TRY( cudaMemcpy(efromD, &x.destinationIndices(), EFROM1, cudaMemcpyHostToDevice) );
 
-  fillKernel<<<blocks, threads>>>(rD, N, T(1.0/N));
+  T r0 = T(1)/N;
+  fillKernel<<<blocks, threads>>>(rD, N, r0);
   while (1) {
-    fillKernel<<<1, 1>>>(eD, 1, 0);
-    pageRankKernel<<<blocks, threads>>>(eD, aD, rD, wD, N, p, E);
-    TRY( cudaMemcpy(&e, eD, E1, cudaMemcpyDeviceToHost) );
+    T ct = pageRankTeleport(r0, p, N, Z);
+    multiplyKernel<<<blocks, threads>>>(cD, rD, fD, S);
+    pageRankKernel<<<blocks, threads>>>(aD, cD, vfromD, efromD, S);
+    addKernel<<<blocks, threads>>>(aD, S, ct);
+    errorAbsKernel<<<blocks, threads>>>(eD, rD, aD);
+    TRY( cudaMemcpy(e.data(), eD, E1, cudaMemcpyDeviceToHost) );
+    if (sum(e) < E) break;
     swap(aD, rD);
-    if (!e) break;
+    r0 = ct;
   }
-  TRY( cudaMemcpy(a, rD, A1, cudaMemcpyDeviceToHost) );
+  auto& a = *new vector<T>(S);
+  TRY( cudaMemcpy(a, aD, A1, cudaMemcpyDeviceToHost) );
 
-  TRY( cudaFree(wD) );
-  TRY( cudaFree(rD) );
-  TRY( cudaFree(aD) );
   TRY( cudaFree(eD) );
+  TRY( cudaFree(fD) );
+  TRY( cudaFree(rD) );
+  TRY( cudaFree(cD) );
+  TRY( cudaFree(aD) );
+  TRY( cudaFree(vfromD) );
+  TRY( cudaFree(efromD) );
+  return a;
 }
 
-template <class T>
-void pageRankCuda(T *a, T *w, int N, pageRankOptions<T> o=pageRankOptions<T>()) {
-  pageRankCuda(a, w, N, o.damping, o.convergence);
-}
-
-template <class T>
-void pageRankCuda(T *a, DenseDiGraph<T>& x, pageRankOptions<T> o=pageRankOptions<T>()) {
-  pageRankCuda(a, x.weights, x.order, o);
+template <class G, class T=float>
+auto pageRankCuda(G& x, vector<int>& odeg, pageRankOptions<T> o=pageRankOptions<T>()) {
+  return pageRankCuda(x, odeg, o.damping, o.convergence);
 }
