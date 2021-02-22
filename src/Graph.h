@@ -1,5 +1,4 @@
 #pragma once
-#include "_support.h"
 
 
 
@@ -14,6 +13,7 @@ class Graph : public G {
   public:
   int size()   { return G::size()/2; }
   auto& base() { return (G&) (*this); }
+  auto& root() { return G::root(); }
 
   // Write operations
   public:

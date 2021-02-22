@@ -1,41 +1,28 @@
 #pragma once
-#include <tuple>
 #include <vector>
 #include <iterator>
 #include <algorithm>
 #include "_support.h"
-#include "filter.h"
-#include "range.h"
+#include "DiGraph.h"
 #include "find.h"
-#include "transform.h"
-#include "lowerBound.h"
 #include "insert.h"
 #include "erase.h"
-#include <stdio.h>
+#include "range.h"
+#include "transform.h"
+#include "filter.h"
 
-using std::tuple;
 using std::vector;
-using std::min;
-using std::count;
 using std::find;
-using std::lower_bound;
-using std::transform;
 
 
 
 
 template <class V=NONE, class E=NONE>
-class CompactDiGraphBase {
+class CompactDiGraphBase : public DiGraphBase<int, V, E> {
   vector<int> vto {0, 0};
   vector<int> eto;
   vector<V> vdata;
   vector<E> edata;
-
-  // Types
-  public:
-  using TKey    = int;
-  using TVertex = V;
-  using TEdge   = E;
 
   // Cute helpers
   private:
@@ -71,21 +58,14 @@ class CompactDiGraphBase {
   int span()   { return n(); }
   int order()  { return n(); }
   int size()   { return m(); }
-  bool empty() { return n() == 0; }
-
-  auto& base()               { return *this; }
-  auto& sourceOffsets()      { return vto; }
-  auto& destinationIndices() { return eto; }
-  auto& vertexData()         { return vdata; }
-  auto& edgeData()           { return edata; }
 
   bool hasVertex(int u)      { return u < n(); }
   bool hasEdge(int u, int v) { return ex(u, v); }
   auto edges(int u)          { return transform(ebgn(u), eend(u), IDENTITY); }
   int degree(int u)          { return eendi(u) - ebgni(u); }
   auto vertices()            { return range(n()); }
-  auto inEdges(int v)  { return filter(range(n()), [&](int u) { return ex(u, v); }); }
-  int inDegree(int v) { return countIf(range(n()), [&](int u) { return ex(u, v); }); }
+  auto inEdges(int v)  { return filter(vertices(), [&](int u) { return ex(u, v); }); }
+  int inDegree(int v) { return countIf(vertices(), [&](int u) { return ex(u, v); }); }
 
   V vertexData(int u)            { return vdata[u]; }
   void setVertexData(int u, V d)        { vdata[u] = d; }
@@ -133,21 +113,27 @@ class CompactDiGraphBase {
     eraseAt(vto, u);
     eraseAt(vdata, u);
   }
+
+  // Access operations
+  public:
+  auto& vertexData()         { return vdata; }
+  auto& edgeData()           { return edata; }
+  auto& sourceOffsets()      { return vto; }
+  auto& destinationIndices() { return eto; }
+
+  // Generate operations
+  public:
+  template <class T>
+  auto createVertexData() { return vector<T>(span()); }
 };
 
 
 
 
 template <class K=int, class V=NONE, class E=NONE>
-class CompactDiGraph {
+class CompactDiGraph : public DiGraphBase<K, V, E> {
   CompactDiGraphBase<V, E> x;
   vector<K> vkeys;
-
-  // Types
-  public:
-  using TKey    = K;
-  using TVertex = V;
-  using TEdge   = E;
 
   // Cute helpers
   private:
@@ -158,14 +144,7 @@ class CompactDiGraph {
   int span()   { return x.span(); }
   int order()  { return x.order(); }
   int size()   { return x.size(); }
-  bool empty() { return x.empty(); }
-
-  auto& base()               { return x; }
-  auto& sourceOffsets()      { return x.sourceOffsets(); }
-  auto& destinationIndices() { return x.destinationIndices(); }
-  auto& edgeData()           { return x.edgeData(); }
-  auto& vertexData()         { return x.vertexData(); }
-  auto& vertexKeys()         { return vkeys; }
+  auto& base() { return x; }
 
   bool hasVertex(K u)    { return x.hasVertex(vi(u)); }
   bool hasEdge(K u, K v) { return hasVertex(u) && x.hasEdge(vi(u), vi(v)); }
@@ -217,4 +196,12 @@ class CompactDiGraph {
     x.removeVertex(vi(u));
     eraseAt(vkeys, vi(u));
   }
+
+  // Generate operations
+  public:
+  auto& vertexKeys()         { return vkeys; }
+  auto& vertexData()         { return x.vertexData(); }
+  auto& edgeData()           { return x.edgeData(); }
+  auto& sourceOffsets()      { return x.sourceOffsets(); }
+  auto& destinationIndices() { return x.destinationIndices(); }
 };

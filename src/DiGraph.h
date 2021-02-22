@@ -4,12 +4,12 @@
 #include <unordered_map>
 #include <utility>
 #include "_support.h"
-#include "count.h"
-#include "erase.h"
-#include "filter.h"
 #include "find.h"
+#include "erase.h"
 #include "range.h"
+#include "count.h"
 #include "transform.h"
+#include "filter.h"
 
 using std::tuple;
 using std::vector;
@@ -20,64 +20,51 @@ using std::get;
 
 
 template <class K=int, class V=NONE, class E=NONE>
-class DiGraph {
-  vector<K> none;  // TODO: try removing this
-  unordered_map<K, tuple<vector<K>, vector<E>, V>> ve;
-  int M = 0;
-
+class DiGraphBase {
   // Types
   public:
   using TKey    = K;
   using TVertex = V;
   using TEdge   = E;
 
-  // Cute helpers
-  private:
-  int n() { return ve.size(); }
-  auto eto(K u)     { return get<0>(ve[u]); }
-  auto& edata(K u)  { return get<1>(ve[u]); }
-  auto& vdata(K u)  { return get<2>(ve[u]); }
-  bool ex(K u, K v) { return find(eto(u), v) != eto(u).end(); }
-  int  ei(K u, K v) { return find(eto(u), v) -  eto(u).begin(); }
-
   // Read operations
   public:
-  int span()   { return n(); }
-  int order()  { return n(); }
-  int size()   { return M; }
-  bool empty() { return n() == 0; }
+  int span()   { return 0; }
+  int order()  { return 0; }
+  int size()   { return 0; }
+  bool empty() { return order() == 0; }
   auto& base() { return *this; }
+  auto& root() { return base(); }
 
-  bool hasVertex(K u)    { return ve.find(u) != ve.end(); }
-  bool hasEdge(K u, K v) { return hasVertex(u) && ex(u, v); }
-  auto& edges(K u) { return hasVertex(u)? eto(u) : none; }
-  int degree(K u)  { return hasVertex(u)? eto(u).size() : 0; }
-  auto vertices()  { return transform(ve, [&](auto p) { return p.first; }); }
-  auto inEdges(K v)   { return filter(ve, [&](auto p) { return ex(p.first, v); }); }
-  int inDegree(K v)  { return countIf(ve, [&](auto p) { return ex(p.first, v); }); }
+  bool hasVertex(K u)    { return false; }
+  bool hasEdge(K u, K v) { return false; }
+  auto vertices()   { return vector<K>(); }
+  auto edges(K u)   { return vector<K>(); }
+  auto inEdges(K v) { return vector<K>(); }
+  int degree(K u)   { return 0; }
+  int inDegree(K v) { return 0; }
 
-  V vertexData(K u)         { return hasVertex(u)? vdata(u) : V(); }
-  void setVertexData(K u, V d) { if (hasVertex(u)) vdata(u) = d; }
-  E edgeData(K u, K v)         { return hasEdge(u, v)? edata(u)[ei(u, v)] : E(); }
-  void setEdgeData(K u, K v, E d) { if (hasEdge(u, v)) edata(u)[ei(u, v)] = d; }
+  V vertexData(K u)    { return V(); }
+  E edgeData(K u, K v) { return E(); }
+  void setVertexData(K u, V d)    {}
+  void setEdgeData(K u, K v, E d) {}
 
-  // Generate operations
+  // Write operations
   public:
-  auto sourceOffsets() {
-    int i = 0;
-    vector<int> a;
-    a.reserve(order()+2);
-    for (K u : vertices()) {
-      a.push_back(i);
-      i += degree(u);
-    }
-    a.push_back(i);
-    a.push_back(i);
-    return a;
-  }
+  void addVertex(K u, V d=V())    {}
+  void addEdge(K u, K v, E d=E()) {}
+  void removeEdge(K u, K v) {}
+  void removeEdges(K u)     {}
+  void removeInEdges(K v)   {}
+  void removeVertex(K u)    {}
 
-  auto destinationIndices() {
-    vector<int> a; // TODO
+  // Access operations
+  public:
+  auto vertexKeys() {
+    vector<K> a;
+    a.reserve(order());
+    for (K u : vertices())
+      a.push_back(u);
     return a;
   }
 
@@ -98,6 +85,76 @@ class DiGraph {
     }
     return a;
   }
+
+  auto sourceOffsets() {
+    int i = 0;
+    vector<int> a;
+    a.reserve(order()+2);
+    for (K u : vertices()) {
+      a.push_back(i);
+      i += degree(u);
+    }
+    a.push_back(i);
+    a.push_back(i);
+    return a;
+  }
+
+  auto destinationIndices() {
+    vector<int> a;
+    a.reserve(size());
+    auto ks = vertexKeys();
+    for (K u : vertices()) {
+      for (K v : edges(u))
+        a.push_back(find(ks, v) - ks.begin());
+    }
+    return a;
+  }
+
+  // Generate operations
+  public:
+  template <class T>
+  auto createVertexData() { return unordered_map<K, T>(); }
+
+  template <class T>
+  auto createEdgeData()   { return unordered_map<tuple<K, K>, T>(); }
+};
+
+
+
+
+template <class K=int, class V=NONE, class E=NONE>
+class DiGraph : public DiGraphBase<K, V, E> {
+  vector<K> none;  // TODO: try removing this
+  unordered_map<K, tuple<vector<K>, vector<E>, V>> ve;
+  int M = 0;
+
+  // Cute helpers
+  private:
+  int n() { return ve.size(); }
+  auto& eto(K u)    { return get<0>(ve[u]); }
+  auto& edata(K u)  { return get<1>(ve[u]); }
+  auto& vdata(K u)  { return get<2>(ve[u]); }
+  bool ex(K u, K v) { return find(eto(u), v) != eto(u).end(); }
+  int  ei(K u, K v) { return find(eto(u), v) -  eto(u).begin(); }
+
+  // Read operations
+  public:
+  int span()   { return n(); }
+  int order()  { return n(); }
+  int size()   { return M; }
+
+  bool hasVertex(K u)    { return ve.find(u) != ve.end(); }
+  bool hasEdge(K u, K v) { return hasVertex(u) && ex(u, v); }
+  auto& edges(K u) { return hasVertex(u)? eto(u) : none; }
+  int degree(K u)  { return hasVertex(u)? eto(u).size() : 0; }
+  auto vertices()  { return transform(ve, [&](auto p) { return p.first; }); }
+  auto inEdges(K v)   { return filter(ve, [&](auto p) { return ex(p.first, v); }); }
+  int inDegree(K v)  { return countIf(ve, [&](auto p) { return ex(p.first, v); }); }
+
+  V vertexData(K u)         { return hasVertex(u)? vdata(u) : V(); }
+  void setVertexData(K u, V d) { if (hasVertex(u)) vdata(u) = d; }
+  E edgeData(K u, K v)         { return hasEdge(u, v)? edata(u)[ei(u, v)] : E(); }
+  void setEdgeData(K u, K v, E d) { if (hasEdge(u, v)) edata(u)[ei(u, v)] = d; }
 
   // Write operations
   public:
@@ -148,19 +205,13 @@ class DiGraph {
 
 
 template <class V, class E>
-class DiGraph<int, V, E> {
+class DiGraph<int, V, E> : public DiGraphBase<int, V, E> {
   vector<int>  none;  // TODO: try removing this
   vector<bool> vex;
   vector<vector<int>> veto;
   vector<vector<E>>   edata;
   vector<V>           vdata;
   int N = 0, M = 0;
-
-  // Types
-  public:
-  using TKey    = int;
-  using TVertex = V;
-  using TEdge   = E;
 
   // Cute helpers
   private:
@@ -174,11 +225,6 @@ class DiGraph<int, V, E> {
   int span()   { return s(); }
   int order()  { return N; }
   int size()   { return M; }
-  bool empty() { return N == 0; }
-  auto& base() { return *this; }
-
-  auto& vertexData() { return vdata; }
-  auto& edgeData() { return edata; }
 
   bool hasVertex(int u)      { return u < s() && vex[u]; }
   bool hasEdge(int u, int v) { return u < s() && ex(u, v); }
@@ -245,4 +291,14 @@ class DiGraph<int, V, E> {
     vex[u] = false;
     N--;
   }
+
+  // Access operations
+  public:
+  auto& vertexData() { return vdata; }
+  auto& edgeData()   { return edata; }
+
+  // Generate operations
+  public:
+  template <class T>
+  auto createVertexData() { return vector<T>(span()); }
 };

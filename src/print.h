@@ -57,9 +57,9 @@ void print(G& x, bool all=false) {
   cout << "order: " << x.order() << " size: " << x.size();
   if (!all) { cout << " {}\n"; return; }
   cout << "{\n";
-  for (auto&& u : x.vertices()) {
+  for (auto u : x.vertices()) {
     cout << "  " << u << " ->";
-    for (auto&& v : x.edges(u))
+    for (auto v : x.edges(u))
       cout << " " << v;
     cout << "\n";
   }
