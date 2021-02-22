@@ -11,6 +11,11 @@
 #define _THREADS 64
 #endif
 
+#ifndef _BLOCKS
+/** Max. blocks per grid. */
+#define _BLOCKS 1024
+#endif
+
 
 
 

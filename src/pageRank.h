@@ -13,6 +13,7 @@
 #include "fill.h"
 #include "multiply.h"
 #include "errorAbs.h"
+#include <stdio.h>
 
 using std::vector;
 using std::unordered_map;
@@ -84,13 +85,13 @@ T pageRankTeleport(G& x, vector<T>& r, T p, int N) {
 template <class G, class T>
 void pageRankFactor(vector<T>& a, G& x, T p) {
   int N = x.order();
-  auto& vdata = x.vertexData();
+  auto vdata = x.vertexData();
   transform(vdata.begin(), vdata.end(), a.begin(), [=](int d) { return d>0? p/d : 0; });
 }
 
 
 template <class G, class T>
-void pageRankPullStep(vector<T>& a, vector<T>& c, G& x, T p, T c0) {
+void pageRankPullStep(vector<T>& a, vector<T>& c, G& x, T c0) {
   for (int v : x.vertices())
     a[v] = c0 + sumAt(c, x.edges(v));
 }
@@ -99,23 +100,19 @@ void pageRankPullStep(vector<T>& a, vector<T>& c, G& x, T p, T c0) {
 template <class G, class T>
 vector<T>& pageRankPull(G& x, T p, T E) {
   int N = x.order(), S = x.span();
-  // int Z = count(x.vertexData(), 0)-(S-N);
-  // printf("Z: %d\n", Z);
-  T r0 = T(1)/N;
   auto& r = *new vector<T>(S);
   auto& f = *new vector<T>(S);
   auto& c = *new vector<T>(S);
   auto& a = *new vector<T>(S);
-  fillAt(r, x.vertices(), r0);
+  fillAt(r, x.vertices(), T(1)/N);
   pageRankFactor(f, x, p);
   while (1) {
     T c0 = pageRankTeleport(x, r, p, N);
     multiply(c, r, f);
-    pageRankPullStep(a, c, x, p, c0);
+    pageRankPullStep(a, c, x, c0);
     T e = errorAbs(a, r);
     if (e < E) break;
     swap(a, r);
-    r0 = c0;
   }
   return a;
 }
@@ -128,8 +125,23 @@ auto& pageRankPull(G& x, pageRankOptions<T> o=pageRankOptions<T>()) {
 
 
 
+template <class T, class V>
+__device__ void pageRankFactorKernelLoop(T *a, V *vdata, T p, int N, int i, int DI) {
+  for (; i<N; i+=DI) {
+    V d = vdata[i];
+    a[i] = d>0? p/d : 0;
+  }
+}
+
+template <class T, class V>
+__global__ void pageRankFactorKernel(T *a, V *vdata, T p, int N) {
+  DEFINE(t, b, B, G);
+  pageRankFactorKernelLoop(a, vdata, p, N, B*b+t, G*B);
+}
+
+
 template <class T>
-__global__ void pageRankKernel(T *a, T *c, int *vfrom, int *efrom, int N) {
+__global__ void pageRankPullKernelStep(T *a, T *c, int *vfrom, int *efrom, T c0, int N) {
   DEFINE(t, b, B, G);
   __shared__ T cache[_THREADS];
 
@@ -138,66 +150,78 @@ __global__ void pageRankKernel(T *a, T *c, int *vfrom, int *efrom, int N) {
     int ideg = vfrom[v+1]-vfrom[v];
     cache[t] = sumAtKernelLoop(c, efrom+ebgn, ideg, t, B);
     sumKernelReduce(cache, B, t);
-    a[v] = cache[0];
+    if (t == 0) a[v] = c0 + cache[0];
   }
 }
 
 
 template <class G, class T>
-vector<T>& pageRankCuda(G& x, vector<int>& odeg, T p, T E) {
-  int N = x.order(), M = x.size(), S = x.span();
+vector<T> pageRankPullCuda(G& x, T p, T E) {
+  int N = x.order();
+  auto vfrom = x.sourceOffsets();
+  auto efrom = x.destinationIndices();
+  auto vdata = x.vertexData();
   int threads = _THREADS;
   int blocks = max(ceilDiv(N, threads), 1024);
-  int E1 = blocks * sizeof(T);
-  int A1 = S * sizeof(T);
-  int VFROM1 = x.sourceOffsets().size() * sizeof(int);
-  int EFROM1 = x.destinationIndices().size() * sizeof(int);
+  int VFROM1 = vfrom.size() * sizeof(int);
+  int EFROM1 = efrom.size() * sizeof(int);
+  int VDATA1 = N  * sizeof(int);
+  int B1 = blocks * sizeof(T);
+  int N1 = N      * sizeof(T);
 
-  int Z = count(odeg, 0);
+  vector<T> r0(blocks);
   vector<T> e(blocks);
-  vector<T> f(S);
-  transform(odeg, f, [=](int d) { return d>0? p/d : p/N; });
+  vector<T> a(N);
+  printf("N: %d\n", N);
+  printf("vfrom: %ld\n", vfrom.size());
+  printf("efrom: %ld\n", efrom.size());
+  printf("vdata: %ld\n", vdata.size());
 
-  T *eD, *fD, *rD, *cD, *aD;
-  int *vfromD, *efromD;
-  TRY( cudaMalloc(&eD, E1) );
-  TRY( cudaMalloc(&fD, A1) );
-  TRY( cudaMalloc(&rD, A1) );
-  TRY( cudaMalloc(&cD, A1) );
-  TRY( cudaMalloc(&aD, A1) );
+  T *eD, *r0D, *fD, *rD, *cD, *aD;
+  int *vfromD, *efromD, *vdataD;
   TRY( cudaMalloc(&vfromD, VFROM1) );
   TRY( cudaMalloc(&efromD, EFROM1) );
-  TRY( cudaMemcpy(fD,      f.data(),               A1,     cudaMemcpyHostToDevice) );
-  TRY( cudaMemcpy(vfromD, &x.sourceOffsets(),      VFROM1, cudaMemcpyHostToDevice) );
-  TRY( cudaMemcpy(efromD, &x.destinationIndices(), EFROM1, cudaMemcpyHostToDevice) );
+  TRY( cudaMalloc(&vdataD, VDATA1) );
+  TRY( cudaMalloc(&r0D, B1) );
+  TRY( cudaMalloc(&eD,  B1) );
+  TRY( cudaMalloc(&fD, N1) );
+  TRY( cudaMalloc(&rD, N1) );
+  TRY( cudaMalloc(&cD, N1) );
+  TRY( cudaMalloc(&aD, N1) );
+  TRY( cudaMemcpy(vfromD, vfrom.data(), VFROM1, cudaMemcpyHostToDevice) );
+  TRY( cudaMemcpy(efromD, efrom.data(), EFROM1, cudaMemcpyHostToDevice) );
+  TRY( cudaMemcpy(vdataD, vdata.data(), VDATA1, cudaMemcpyHostToDevice) );
 
-  T r0 = T(1)/N;
-  fillKernel<<<blocks, threads>>>(rD, N, r0);
+  fillKernel<<<threads, blocks>>>(rD, N, T(1)/N);
+  TRY( cudaMemcpy(r0.data(), r0D, B1, cudaMemcpyDeviceToHost) );
+  pageRankFactorKernel<<<threads, blocks>>>(fD, vdataD, p, N);
+  TRY( cudaMemcpy(r0.data(), r0D, B1, cudaMemcpyDeviceToHost) );
   while (1) {
-    T ct = pageRankTeleport(r0, p, N, Z);
-    multiplyKernel<<<blocks, threads>>>(cD, rD, fD, S);
-    pageRankKernel<<<blocks, threads>>>(aD, cD, vfromD, efromD, S);
-    addKernel<<<blocks, threads>>>(aD, S, ct);
-    errorAbsKernel<<<blocks, threads>>>(eD, rD, aD);
-    TRY( cudaMemcpy(e.data(), eD, E1, cudaMemcpyDeviceToHost) );
+    printf("pageRankPullCuda\n");
+    sumIfNotKernel<<<threads, blocks>>>(r0D, rD, vdataD, N);
+    TRY( cudaMemcpy(r0.data(), r0D, B1, cudaMemcpyDeviceToHost) );
+    T c0 = (1-p)/N + p*sum(r0)/N;
+    multiplyKernel<<<threads, blocks>>>(cD, rD, fD, N);
+    pageRankPullKernelStep<<<threads, blocks>>>(aD, cD, vfromD, efromD, c0, N);
+    errorAbsKernel<<<blocks, threads>>>(eD, rD, aD, N);
+    TRY( cudaMemcpy(e.data(), eD, B1, cudaMemcpyDeviceToHost) );
     if (sum(e) < E) break;
     swap(aD, rD);
-    r0 = ct;
   }
-  auto& a = *new vector<T>(S);
-  TRY( cudaMemcpy(a, aD, A1, cudaMemcpyDeviceToHost) );
+  TRY( cudaMemcpy(a.data(), aD, N1, cudaMemcpyDeviceToHost) );
 
+  TRY( cudaFree(vfromD) );
+  TRY( cudaFree(efromD) );
+  TRY( cudaFree(r0D) );
   TRY( cudaFree(eD) );
   TRY( cudaFree(fD) );
   TRY( cudaFree(rD) );
   TRY( cudaFree(cD) );
   TRY( cudaFree(aD) );
-  TRY( cudaFree(vfromD) );
-  TRY( cudaFree(efromD) );
   return a;
 }
 
 template <class G, class T=float>
-auto pageRankCuda(G& x, vector<int>& odeg, pageRankOptions<T> o=pageRankOptions<T>()) {
-  return pageRankCuda(x, odeg, o.damping, o.convergence);
+auto pageRankPullCuda(G& x, pageRankOptions<T> o=pageRankOptions<T>()) {
+  return pageRankPullCuda(x, o.damping, o.convergence);
 }

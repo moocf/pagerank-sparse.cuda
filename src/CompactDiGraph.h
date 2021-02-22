@@ -1,10 +1,10 @@
 #pragma once
 #include <vector>
-#include <iterator>
 #include <algorithm>
 #include "_support.h"
 #include "DiGraph.h"
 #include "find.h"
+#include "lowerBound.h"
 #include "insert.h"
 #include "erase.h"
 #include "range.h"
@@ -34,10 +34,10 @@ class CompactDiGraphBase : public DiGraphBase<int, V, E> {
   auto eend() { return eto.end(); }
   auto vbgn(int u) { return vbgn()+u; }
   auto vend(int u) { return vbgn()+u+1; }
-  auto ebgni(int u) { return vto[u]; }
-  auto eendi(int u) { return vto[u+1]; }
-  auto ebgn(int u) { return eto.begin()+ebgni(u); }
-  auto eend(int u) { return eto.begin()+eendi(u); }
+  int ebgni(int u) { return vto[u]; }
+  int eendi(int u) { return vto[u+1]; }
+  auto ebgn(int u) { return ebgn()+ebgni(u); }
+  auto eend(int u) { return ebgn()+eendi(u); }
   bool ex(int u, int v) { return find(ebgn(u), eend(u), v) != eend(u); }
   int  ei(int u, int v) { return find(ebgn(u), eend(u), v) -  ebgn(); }
   void vadj(int i, int n) { transformW(vbgn(i), vend(), [&](int o) { return o+n; }); }
@@ -137,7 +137,8 @@ class CompactDiGraph : public DiGraphBase<K, V, E> {
 
   // Cute helpers
   private:
-  int  vi(K u) { return find(vkeys, u) -  vkeys.begin(); }
+  int vi(K u) { return lowerBoundEqual(vkeys, u) - vkeys.begin(); }
+  int vj(K u) { return lowerBound(vkeys, u)      - vkeys.begin(); }
 
   // Read operations
   public:
@@ -161,13 +162,13 @@ class CompactDiGraph : public DiGraphBase<K, V, E> {
 
   // Write operations
   public:
-  void addVertex(K u, V d=V()) {
+  void addVertex(K u, V d=V()) { // Can be optimized
     if (hasVertex(u)) return;
-    x.addVertex(vi(u), d);
-    insertAt(vkeys, vi(u), u);
+    x.addVertex(vj(u), d);
+    insertAt(vkeys, vj(u), u);
   }
 
-  void addEdge(K u, K v, E d=E()) {
+  void addEdge(K u, K v, E d=E()) { // Can be optimized
     if (hasEdge(u, v)) return;
     addVertex(u);
     addVertex(v);

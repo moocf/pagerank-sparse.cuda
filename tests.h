@@ -267,12 +267,21 @@ const char* testErrorAbs() {
 
 const char* testDiGraph() {
   DiGraph<int, int, int> g;
+  DiGraph<char, int, int> h;
+
   g.addVertex(1, 10);
   g.addEdge(1, 2, 12);
   g.addEdge(2, 4, 24);
   g.addEdge(4, 3, 43);
   g.addEdge(3, 1, 31);
   g.removeEdge(1, 2);
+
+  h.addVertex('a', 10);
+  h.addEdge('a', 'b', 12);
+  h.addEdge('b', 'd', 24);
+  h.addEdge('d', 'c', 43);
+  h.addEdge('c', 'a', 31);
+  h.removeEdge('a', 'b');
 
   if (!(
     g.span()  == 5  &&
@@ -293,6 +302,112 @@ const char* testDiGraph() {
         g.edgeData(u, v) == 10*u+v
       )) return "DiGraphIntEdge";
   }
+
+  if (!(
+    h.span()  == 4  &&
+    h.order() == 4  &&
+    h.size()  == 3  &&
+    h.hasVertex('a')  && h.hasVertex('b')  && h.hasVertex('c')  && h.hasVertex('d') &&
+    h.hasEdge('b', 'd') && h.hasEdge('d', 'c') && h.hasEdge('c', 'a')
+  )) return "DiGraphCharProp";
+  for (char u : h.vertices()) {
+    if (!(
+      u >= 'a' && u <= 'd' &&
+      h.degree(u) <= 1 &&
+      h.vertexData(u) <= 10
+    )) return "DiGraphCharVertex";
+    for (char v : h.edges(u))
+      if (!(
+        v >= 'a' && v <= 'd' &&
+        h.edgeData(u, v) == 10*(u-'a'+1)+(v-'a'+1)
+      )) return "DiGraphCharEdge";
+  }
+  return NULL;
+}
+
+
+const char* testCompactDiGraph() {
+  CompactDiGraph<int, int, int> h;
+  auto& g = h.base();
+  h.addVertex(1, 10);
+  h.addEdge(1, 2, 12);
+  h.addEdge(2, 4, 24);
+  h.addEdge(4, 3, 43);
+  h.addEdge(3, 1, 31);
+  h.removeEdge(1, 2);
+
+  if (!(
+    g.span()  == 4  &&
+    g.order() == 4  &&
+    g.size()  == 3  &&
+    g.hasVertex(0)  && g.hasVertex(1)  && g.hasVertex(2)  && g.hasVertex(3) &&
+    g.hasEdge(1, 3) && g.hasEdge(3, 2) && g.hasEdge(2, 0)
+  )) return "CompactDiGraphBaseProp";
+  for (int u : g.vertices()) {
+    if (!(
+      u >= 0 && u <= 3 &&
+      g.degree(u) <= 1 &&
+      g.vertexData(u) <= 10
+    )) return "CompactDiGraphBaseVertex";
+    for (int v : g.edges(u))
+      if (!(
+        v >= 0 && v <= 3 &&
+        g.edgeData(u, v) == 10*(u+1)+(v+1)
+      )) return "CompactDiGraphBaseEdge";
+  }
+
+  if (!(
+    h.span()  == 4  &&
+    h.order() == 4  &&
+    h.size()  == 3  &&
+    h.hasVertex(1)  && h.hasVertex(2)  && h.hasVertex(3)  && h.hasVertex(4) &&
+    h.hasEdge(2, 4) && h.hasEdge(4, 3) && h.hasEdge(3, 1)
+  )) return "CompactDiGraphIntProp";
+  for (int u : h.vertices()) {
+    if (!(
+      u >= 1 && u <= 4 &&
+      h.degree(u) <= 1 &&
+      h.vertexData(u) <= 10
+    )) return "CompactDiGraphIntVertex";
+    for (int v : h.edges(u))
+      if (!(
+        v >= 1 && v <= 4 &&
+        h.edgeData(u, v) == 10*u+v
+      )) return "CompactDiGraphIntEdge";
+  }
+  return NULL;
+}
+
+
+const char* testCopy() {
+  DiGraph<> g;
+  CompactDiGraph<> h;
+  g.addEdge(1, 2);
+  g.addEdge(2, 4);
+  g.addEdge(4, 3);
+  g.addEdge(3, 1);
+  copy(g, h);
+
+  auto c = g.sourceOffsets();
+  auto  a = g.destinationIndices();
+  auto& b = h.destinationIndices();
+  print(c);
+  print(a);
+  print(b);
+  if (!(
+    h.order() == 4  &&
+    h.size()  == 4  &&
+    h.hasEdge(1, 2) &&
+    h.hasEdge(2, 4) &&
+    h.hasEdge(4, 3) &&
+    h.hasEdge(3, 1) &&
+  //  g.vertexKeys()         == h.vertexKeys() &&
+  //  g.vertexData()         == h.vertexData() &&
+  //  g.edgeData()           == h.edgeData()   &&
+  //  g.sourceOffsets()      == h.sourceOffsets() &&
+  //  g.destinationIndices() == h.destinationIndices()
+    a == b
+  )) return "copy";
   return NULL;
 }
 
@@ -305,13 +420,14 @@ const char* testTranspose() {
   g.addEdge(4, 3);
   g.addEdge(3, 1);
   transpose(g, h);
+
   if (!(
+   h.order() == 4  &&
+   h.size()  == 4  &&
    h.hasEdge(2, 1) &&
    h.hasEdge(4, 2) &&
    h.hasEdge(3, 4) &&
-   h.hasEdge(1, 3) &&
-   h.order() == 4 &&
-   h.size() == 4
+   h.hasEdge(1, 3)
   )) return "transpose";
   return NULL;
 }
@@ -333,6 +449,8 @@ void testAll() {
     testDotProduct(),
     testErrorAbs(),
     testDiGraph(),
+    testCompactDiGraph(),
+    testCopy(),
     testTranspose()
   };
   int n = 0;

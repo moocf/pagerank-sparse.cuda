@@ -109,7 +109,7 @@ __global__ void sumKernel(T *a, T *x, int N) {
 template <class T>
 T sumCuda(T *x, int N) {
   int threads = _THREADS;
-  int blocks = max(ceilDiv(N, threads), 1024);
+  int blocks = max(ceilDiv(N, threads), _BLOCKS);
   size_t X1 = N * sizeof(T);
   size_t A1 = blocks * sizeof(T);
   unique_ptr<T> a(new T[A1]);
@@ -149,34 +149,29 @@ __global__ void sumAtKernel(T *a, T *x, T *is, int N) {
   DEFINE(t, b, B, G);
   __shared__ T cache[_THREADS];
 
-  cache[t] = sumKernelLoop(x, is, N, B*b+t, G*B);
+  cache[t] = sumAtKernelLoop(x, is, N, B*b+t, G*B);
   sumKernelReduce(cache, B, t);
   if (t == 0) a[b] = cache[0];
 }
 
 
-template <class T>
-T sumAtCuda(T *x, int *is, int N) {
-  int threads = _THREADS;
-  int blocks = max(ceilDiv(N, threads), 1024);
-  size_t X1 = N * sizeof(T);
-  size_t A1 = blocks * sizeof(T);
-  unique_ptr<T> a(new T[A1]);
 
-  T *xD, *aD;
-  TRY( cudaMalloc(&xD, X1) );
-  TRY( cudaMalloc(&aD, A1) );
-  TRY( cudaMemcpy(xD, x, X1, cudaMemcpyHostToDevice) );
 
-  sumAtKernel<<<blocks, threads>>>(aD, xD, N);
-  TRY( cudaMemcpy(a.get(), aD, A1, cudaMemcpyDeviceToHost) );
-
-  TRY( cudaFree(xD) );
-  TRY( cudaFree(aD) );
-  return sum(a.get(), blocks);
+template <class T, class C>
+__device__ T sumIfNotKernelLoop(T *x, C *cs, int N, int i, int DI) {
+  T a = T();
+  for (; i<N; i+=DI)
+    if (cs[i] == 0) a += x[i];
+  return a;
 }
 
-template <class T>
-T sumAtCuda(vector<T>& x) {
-  return sumAtCuda(x.data(), x.size());
+
+template <class T, class C>
+__global__ void sumIfNotKernel(T *a, T *x, C *cs, int N) {
+  DEFINE(t, b, B, G);
+  __shared__ T cache[_THREADS];
+
+  cache[t] = sumIfNotKernelLoop(x, cs, N, B*b+t, G*B);
+  sumKernelReduce(cache, B, t);
+  if (t == 0) a[b] = cache[0];
 }

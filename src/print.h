@@ -56,7 +56,7 @@ template <class G>
 void print(G& x, bool all=false) {
   cout << "order: " << x.order() << " size: " << x.size();
   if (!all) { cout << " {}\n"; return; }
-  cout << "{\n";
+  cout << " {\n";
   for (auto u : x.vertices()) {
     cout << "  " << u << " ->";
     for (auto v : x.edges(u))

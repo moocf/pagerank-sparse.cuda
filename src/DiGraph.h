@@ -60,55 +60,65 @@ class DiGraphBase {
 
   // Access operations
   public:
-  auto vertexKeys() {
+  template <class G>
+  static auto vertexKeys(G& x) {
     vector<K> a;
-    a.reserve(order());
-    for (K u : vertices())
+    a.reserve(x.order());
+    for (K u : x.vertices())
       a.push_back(u);
     return a;
   }
 
-  auto vertexData() {
+  template <class G>
+  static auto vertexData(G& x) {
     vector<V> a;
-    a.reserve(order());
-    for (K u : vertices())
-      a.push_back(vertexData(u));
+    a.reserve(x.order());
+    for (K u : x.vertices())
+      a.push_back(x.vertexData(u));
     return a;
   }
 
-  auto edgeData() {
+  template <class G>
+  static auto edgeData(G& x) {
     vector<E> a;
-    a.reserve(size());
-    for (K u : vertices()) {
-      for (K v : edges(u))
-        a.push_back(edgeData(u, v));
+    a.reserve(x.size());
+    for (K u : x.vertices()) {
+      for (K v : x.edges(u))
+        a.push_back(x.edgeData(u, v));
     }
     return a;
   }
 
-  auto sourceOffsets() {
+  template <class G>
+  static auto sourceOffsets(G& x) {
     int i = 0;
     vector<int> a;
-    a.reserve(order()+2);
-    for (K u : vertices()) {
+    a.reserve(x.order()+2);
+    for (K u : x.vertices()) {
       a.push_back(i);
-      i += degree(u);
+      i += x.degree(u);
     }
     a.push_back(i);
     a.push_back(i);
     return a;
   }
 
-  auto destinationIndices() {
+  template <class G>
+  static auto destinationIndices(G& x) {
     vector<int> a;
-    a.reserve(size());
-    auto ks = vertexKeys();
-    for (K u : vertices()) {
-      for (K v : edges(u))
+    a.reserve(x.size());
+    auto ks = x.vertexKeys();
+    for (K u : x.vertices()) {
+      for (K v : x.edges(u))
         a.push_back(find(ks, v) - ks.begin());
     }
     return a;
   }
+  auto vertexKeys() { return vertexKeys(*this); }
+  auto vertexData() { return vertexData(*this); }
+  auto edgeData() { return edgeData(*this); }
+  auto sourceOffsets() { return sourceOffsets(*this); }
+  auto destinationIndices() { return destinationIndices(*this); }
 
   // Generate operations
   public:
@@ -294,8 +304,11 @@ class DiGraph<int, V, E> : public DiGraphBase<int, V, E> {
 
   // Access operations
   public:
-  auto& vertexData() { return vdata; }
-  auto& edgeData()   { return edata; }
+  auto vertexKeys() { return DiGraphBase<int, V, E>::vertexKeys(*this); }
+  auto vertexData() { return DiGraphBase<int, V, E>::vertexData(*this); }
+  auto edgeData()   { return  DiGraphBase<int, V, E>::edgeData(*this); }
+  auto sourceOffsets() { return DiGraphBase<int, V, E>::sourceOffsets(*this); }
+  auto destinationIndices() { return DiGraphBase<int, V, E>::destinationIndices(*this); }
 
   // Generate operations
   public:

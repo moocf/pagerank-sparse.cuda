@@ -14,14 +14,22 @@ typedef unsigned char uint8;
 #endif
 
 #ifndef NONE
-struct None {};
+struct None {
+  friend bool operator==(None a, None b) noexcept { return true; }
+
+  template <class T>
+  friend bool operator==(None a, const T& b) noexcept { return false; }
+
+  template <class T>
+  friend bool operator==(const T& a, None b) noexcept { return false; }
+};
 #define NONE None
 #endif
 
 #ifndef IDENTITY
 struct Identity {
   template <class T>
-  constexpr T&& operator()(T&& x) const noexcept { return x; }
+  constexpr T operator()(T x) const noexcept { return x; }
 };
 #define IDENTITY Identity()
 #endif

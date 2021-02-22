@@ -104,8 +104,8 @@ void runPageRankPull(G& g) {
   vector<float> ranks;
   t = measureDuration([&]() { ranks = pageRankPull(g); });
   printf("[%07.1f ms] pageRankPull\n", t); print(ranks);
+  t = measureDuration([&]() { ranks = pageRankPullCuda(g); });
+  printf("[%07.1f ms] pageRankCuda \n", t); print(ranks);
   // t = measureDuration([&]() { pageRankOmp(ranks, g); });
   // printf("[%07.1f ms] pageRankOmp  \n", t); // print(ranks, N);
-  // t = measureDuration([&]() { pageRankCuda(ranks, g); });
-  // printf("[%07.1f ms] pageRankCuda \n", t); // print(ranks, N);
 }

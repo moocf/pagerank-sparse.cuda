@@ -26,7 +26,7 @@ class TransformIterable {
     using pointer = value_type*;
     using reference = value_type;
 
-    Iterator(F fn, I it) : fn(fn), it(it) {}
+    Iterator(const F& fn, I it) : fn(fn), it(it) {}
     ITERATOR_DEREF(Iterator, fn(*it), fn(it[i]), NULL)
     ITERATOR_NEXT(Iterator, ++it, --it)
     ITERATOR_ADVANCE(Iterator, i, it += i, it -= i)
@@ -35,7 +35,7 @@ class TransformIterable {
     ITERATOR_COMPARISION(Iterator, a, b, a.it, b.it)
   };
 
-  TransformIterable(I ib, I ie, F fn) : ib(ib), ie(ie), fn(fn) {}
+  TransformIterable(I ib, I ie, const F& fn) : ib(ib), ie(ie), fn(fn) {}
   Iterator begin() { return Iterator(fn, ib); }
   Iterator end() { return Iterator(fn, ie); }
   Iterator rbegin() { return Iterator(fn, ie-1); }
