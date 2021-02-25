@@ -55,9 +55,12 @@ class CompactDiGraphBase : public DiGraphBase<int, V, E> {
 
   // Read operations
   public:
-  int span()   { return n(); }
-  int order()  { return n(); }
-  int size()   { return m(); }
+  auto& base()   { return *this; }
+  auto& root()   { return *this; }
+  int span()     { return n(); }
+  int order()    { return n(); }
+  int size()     { return m(); }
+  bool isEmpty() { return n() == 0; }
 
   bool hasVertex(int u)      { return u < n(); }
   bool hasEdge(int u, int v) { return ex(u, v); }
@@ -116,6 +119,7 @@ class CompactDiGraphBase : public DiGraphBase<int, V, E> {
 
   // Access operations
   public:
+  auto vertexKeys()          { return getVertexKeys(*this); }
   auto& vertexData()         { return vdata; }
   auto& edgeData()           { return edata; }
   auto& sourceOffsets()      { return vto; }
@@ -142,10 +146,12 @@ class CompactDiGraph : public DiGraphBase<K, V, E> {
 
   // Read operations
   public:
-  int span()   { return x.span(); }
-  int order()  { return x.order(); }
-  int size()   { return x.size(); }
-  auto& base() { return x; }
+  auto& base()   { return x; }
+  auto& root()   { return x; }
+  int span()     { return x.span(); }
+  int order()    { return x.order(); }
+  int size()     { return x.size(); }
+  bool isEmpty() { return x.isEmpty(); }
 
   bool hasVertex(K u)    { return x.hasVertex(vi(u)); }
   bool hasEdge(K u, K v) { return hasVertex(u) && x.hasEdge(vi(u), vi(v)); }

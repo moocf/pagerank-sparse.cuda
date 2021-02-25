@@ -4,6 +4,7 @@
 #include <unordered_map>
 #include <utility>
 #include "_support.h"
+#include "_graph.h"
 #include "find.h"
 #include "erase.h"
 #include "range.h"
@@ -29,12 +30,12 @@ class DiGraphBase {
 
   // Read operations
   public:
-  int span()   { return 0; }
-  int order()  { return 0; }
-  int size()   { return 0; }
-  bool empty() { return order() == 0; }
-  auto& base() { return *this; }
-  auto& root() { return base(); }
+  auto& base()   { return *this; }
+  auto& root()   { return *this; }
+  int span()     { return 0; }
+  int order()    { return 0; }
+  int size()     { return 0; }
+  bool isEmpty() { return true; }
 
   bool hasVertex(K u)    { return false; }
   bool hasEdge(K u, K v) { return false; }
@@ -60,65 +61,11 @@ class DiGraphBase {
 
   // Access operations
   public:
-  template <class G>
-  static auto vertexKeys(G& x) {
-    vector<K> a;
-    a.reserve(x.order());
-    for (K u : x.vertices())
-      a.push_back(u);
-    return a;
-  }
-
-  template <class G>
-  static auto vertexData(G& x) {
-    vector<V> a;
-    a.reserve(x.order());
-    for (K u : x.vertices())
-      a.push_back(x.vertexData(u));
-    return a;
-  }
-
-  template <class G>
-  static auto edgeData(G& x) {
-    vector<E> a;
-    a.reserve(x.size());
-    for (K u : x.vertices()) {
-      for (K v : x.edges(u))
-        a.push_back(x.edgeData(u, v));
-    }
-    return a;
-  }
-
-  template <class G>
-  static auto sourceOffsets(G& x) {
-    int i = 0;
-    vector<int> a;
-    a.reserve(x.order()+2);
-    for (K u : x.vertices()) {
-      a.push_back(i);
-      i += x.degree(u);
-    }
-    a.push_back(i);
-    a.push_back(i);
-    return a;
-  }
-
-  template <class G>
-  static auto destinationIndices(G& x) {
-    vector<int> a;
-    a.reserve(x.size());
-    auto ks = x.vertexKeys();
-    for (K u : x.vertices()) {
-      for (K v : x.edges(u))
-        a.push_back(find(ks, v) - ks.begin());
-    }
-    return a;
-  }
-  auto vertexKeys() { return vertexKeys(*this); }
-  auto vertexData() { return vertexData(*this); }
-  auto edgeData() { return edgeData(*this); }
-  auto sourceOffsets() { return sourceOffsets(*this); }
-  auto destinationIndices() { return destinationIndices(*this); }
+  auto vertexKeys() { return getVertexKeys(*this); }
+  auto vertexData() { return getVertexData(*this); }
+  auto edgeData() { return getEdgeData(*this); }
+  auto sourceOffsets() { return getSourceOffsets(*this); }
+  auto destinationIndices() { return getDestinationIndices(*this); }
 
   // Generate operations
   public:
@@ -149,9 +96,12 @@ class DiGraph : public DiGraphBase<K, V, E> {
 
   // Read operations
   public:
-  int span()   { return n(); }
-  int order()  { return n(); }
-  int size()   { return M; }
+  auto& base()   { return *this; }
+  auto& root()   { return *this; }
+  int span()     { return n(); }
+  int order()    { return n(); }
+  int size()     { return M; }
+  bool isEmpty() { return n() == 0; }
 
   bool hasVertex(K u)    { return ve.find(u) != ve.end(); }
   bool hasEdge(K u, K v) { return hasVertex(u) && ex(u, v); }
@@ -209,6 +159,14 @@ class DiGraph : public DiGraphBase<K, V, E> {
     removeInEdges(u);
     ve.erase(u);
   }
+
+  // Access operations
+  public:
+  auto vertexKeys() { return getVertexKeys(*this); }
+  auto vertexData() { return getVertexData(*this); }
+  auto edgeData() { return getEdgeData(*this); }
+  auto sourceOffsets() { return getSourceOffsets(*this); }
+  auto destinationIndices() { return getDestinationIndices(*this); }
 };
 
 
@@ -232,9 +190,12 @@ class DiGraph<int, V, E> : public DiGraphBase<int, V, E> {
 
   // Read operations
   public:
-  int span()   { return s(); }
-  int order()  { return N; }
-  int size()   { return M; }
+  auto& base()   { return *this; }
+  auto& root()   { return *this; }
+  int span()     { return s(); }
+  int order()    { return N; }
+  int size()     { return M; }
+  bool isEmpty() { return N == 0; }
 
   bool hasVertex(int u)      { return u < s() && vex[u]; }
   bool hasEdge(int u, int v) { return u < s() && ex(u, v); }
@@ -304,11 +265,11 @@ class DiGraph<int, V, E> : public DiGraphBase<int, V, E> {
 
   // Access operations
   public:
-  auto vertexKeys() { return DiGraphBase<int, V, E>::vertexKeys(*this); }
-  auto vertexData() { return DiGraphBase<int, V, E>::vertexData(*this); }
-  auto edgeData()   { return  DiGraphBase<int, V, E>::edgeData(*this); }
-  auto sourceOffsets() { return DiGraphBase<int, V, E>::sourceOffsets(*this); }
-  auto destinationIndices() { return DiGraphBase<int, V, E>::destinationIndices(*this); }
+  auto vertexKeys() { return getVertexKeys(*this); }
+  auto vertexData() { return getVertexData(*this); }
+  auto edgeData() { return getEdgeData(*this); }
+  auto sourceOffsets() { return getSourceOffsets(*this); }
+  auto destinationIndices() { return getDestinationIndices(*this); }
 
   // Generate operations
   public:

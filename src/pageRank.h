@@ -187,18 +187,12 @@ vector<T> pageRankPullCuda(G& x, T p, T E) {
   TRY( cudaMemcpy(vfromD, vfrom.data(), VFROM1, cudaMemcpyHostToDevice) );
   TRY( cudaMemcpy(efromD, efrom.data(), EFROM1, cudaMemcpyHostToDevice) );
   TRY( cudaMemcpy(vdataD, vdata.data(), VDATA1, cudaMemcpyHostToDevice) );
-  printf("VFROM1: %d\n", VFROM1);
-  printf("EFROM1: %d\n", EFROM1);
-  printf("VDATA1: %d\n", VDATA1);
-  printf("B1: %d\n", B1);
-  printf("N1: %d\n", N1);
 
   fillKernel<<<blocks, threads>>>(rD, N, T(1)/N);
   TRY( cudaMemcpy(r0.data(), r0D, B1, cudaMemcpyDeviceToHost) );
   pageRankFactorKernel<<<blocks, threads>>>(fD, vdataD, p, N);
   TRY( cudaMemcpy(r0.data(), r0D, B1, cudaMemcpyDeviceToHost) );
   while (1) {
-    printf("pageRankPullCuda\n");
     sumIfNotKernel<<<blocks, threads>>>(r0D, rD, vdataD, N);
     TRY( cudaMemcpy(r0.data(), r0D, B1, cudaMemcpyDeviceToHost) );
     T c0 = (1-p)/N + p*sum(r0)/N;
