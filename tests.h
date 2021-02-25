@@ -388,25 +388,18 @@ const char* testCopy() {
   g.addEdge(3, 1);
   copy(g, h);
 
-  auto c = g.sourceOffsets();
-  auto  a = g.destinationIndices();
-  auto& b = h.destinationIndices();
-  print(c);
-  print(a);
-  print(b);
   if (!(
     h.order() == 4  &&
     h.size()  == 4  &&
     h.hasEdge(1, 2) &&
     h.hasEdge(2, 4) &&
     h.hasEdge(4, 3) &&
-    h.hasEdge(3, 1) &&
+    h.hasEdge(3, 1)
   //  g.vertexKeys()         == h.vertexKeys() &&
   //  g.vertexData()         == h.vertexData() &&
   //  g.edgeData()           == h.edgeData()   &&
   //  g.sourceOffsets()      == h.sourceOffsets() &&
   //  g.destinationIndices() == h.destinationIndices()
-    a == b
   )) return "copy";
   return NULL;
 }

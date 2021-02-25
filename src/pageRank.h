@@ -52,10 +52,10 @@ void pageRankStep(vector<T>& a, vector<T>& r, G& x, T p) {
 
 
 template <class G, class T>
-vector<T>& pageRank(G& x, T p, T E) {
-  int N = x.order(), S = x.span();
-  auto& a = *new vector<T>(S);
-  auto& r = *new vector<T>(S);
+auto pageRank(G& x, T p, T E) {
+  int N = x.order();
+  auto a = x.createVertexData(T());
+  auto r = x.createVertexData(T());
   fill(r, T(1)/N);
   while (1) {
     pageRankStep(a, r, x, p);
@@ -63,11 +63,12 @@ vector<T>& pageRank(G& x, T p, T E) {
     if (e < E) break;
     swap(a, r);
   }
+  fillAt(a, x.nonVertices(), T());
   return a;
 }
 
 template <class G, class T=float>
-auto& pageRank(G& x, pageRankOptions<T> o=pageRankOptions<T>()) {
+auto pageRank(G& x, pageRankOptions<T> o=pageRankOptions<T>()) {
   return pageRank(x, o.damping, o.convergence);
 }
 
@@ -77,7 +78,7 @@ auto& pageRank(G& x, pageRankOptions<T> o=pageRankOptions<T>()) {
 template <class G, class T>
 T pageRankTeleport(G& x, vector<T>& r, T p, int N) {
   T a = (1-p)/N;
-  for (int u : x.vertices())
+  for (auto u : x.vertices())
     if (x.vertexData(u) == 0) a += p*r[u]/N;
   return a;
 }
@@ -85,25 +86,27 @@ T pageRankTeleport(G& x, vector<T>& r, T p, int N) {
 template <class G, class T>
 void pageRankFactor(vector<T>& a, G& x, T p) {
   int N = x.order();
-  auto vdata = x.vertexData();
-  transform(vdata.begin(), vdata.end(), a.begin(), [=](int d) { return d>0? p/d : 0; });
+  for (auto u : x.vertices()) {
+    int d = x.vertexData(u);
+    a[u] = d>0? p/d : 0;
+  }
 }
 
 
 template <class G, class T>
 void pageRankPullStep(vector<T>& a, vector<T>& c, G& x, T c0) {
-  for (int v : x.vertices())
+  for (auto v : x.vertices())
     a[v] = c0 + sumAt(c, x.edges(v));
 }
 
 
 template <class G, class T>
-vector<T>& pageRankPull(G& x, T p, T E) {
-  int N = x.order(), S = x.span();
-  auto& r = *new vector<T>(S);
-  auto& f = *new vector<T>(S);
-  auto& c = *new vector<T>(S);
-  auto& a = *new vector<T>(S);
+vector<T> pageRankPull(G& x, T p, T E) {
+  int N = x.order();
+  auto r = x.createVertexData(T());
+  auto f = x.createVertexData(T());
+  auto c = x.createVertexData(T());
+  auto a = x.createVertexData(T());
   fillAt(r, x.vertices(), T(1)/N);
   pageRankFactor(f, x, p);
   while (1) {
@@ -114,11 +117,12 @@ vector<T>& pageRankPull(G& x, T p, T E) {
     if (e < E) break;
     swap(a, r);
   }
+  fillAt(a, x.nonVertices(), T());
   return a;
 }
 
 template <class G, class T=float>
-auto& pageRankPull(G& x, pageRankOptions<T> o=pageRankOptions<T>()) {
+auto pageRankPull(G& x, pageRankOptions<T> o=pageRankOptions<T>()) {
   return pageRankPull(x, o.damping, o.convergence);
 }
 

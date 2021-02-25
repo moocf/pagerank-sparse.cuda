@@ -128,7 +128,7 @@ class CompactDiGraphBase : public DiGraphBase<int, V, E> {
   // Generate operations
   public:
   template <class T>
-  auto createVertexData() { return vector<T>(span()); }
+  auto createVertexData(T _) { return vector<T>(span()); }
 };
 
 

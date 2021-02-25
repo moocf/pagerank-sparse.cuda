@@ -8,7 +8,7 @@ using namespace std;
 
 
 int main(int argc, char **argv) {
-  testAll();
+  // testAll();
   printf("Loading graph ...\n");
   DiGraph<> g;
   DiGraph<int, int> h;
@@ -16,11 +16,11 @@ int main(int argc, char **argv) {
   print(g);
   transposeWithDegree(g, h);
   print(h);
-  runAdd();
-  runFill();
-  runSum();
-  runErrorAbs();
-  runDotProduct();
+  // runAdd();
+  // runFill();
+  // runSum();
+  // runErrorAbs();
+  // runDotProduct();
   runPageRank(g);
   runPageRankPull(h);
   return 0;
