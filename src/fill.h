@@ -82,7 +82,7 @@ __global__ void fillKernel(T *a, int N, T v) {
 template <class T>
 void fillCuda(T *a, int N, T v) {
   int threads = _THREADS;
-  int blocks = max(ceilDiv(N, threads), 1024);
+  int blocks = min(ceilDiv(N, threads), _BLOCKS);
   size_t A1 = N * sizeof(T);
 
   T *aD;

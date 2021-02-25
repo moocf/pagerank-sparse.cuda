@@ -109,7 +109,7 @@ __global__ void sumKernel(T *a, T *x, int N) {
 template <class T>
 T sumCuda(T *x, int N) {
   int threads = _THREADS;
-  int blocks = max(ceilDiv(N, threads), _BLOCKS);
+  int blocks = min(ceilDiv(N, threads), _BLOCKS);
   size_t X1 = N * sizeof(T);
   size_t A1 = blocks * sizeof(T);
   unique_ptr<T> a(new T[A1]);

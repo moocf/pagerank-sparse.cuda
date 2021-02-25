@@ -104,7 +104,7 @@ __global__ void multiplyKernel(T *a, int N, T v) {
 template <class T>
 void multiplyCuda(T *a, int N, T v) {
   int threads = _THREADS;
-  int blocks = max(ceilDiv(N, threads), 1024);
+  int blocks = min(ceilDiv(N, threads), _BLOCKS);
   size_t A1 = N * sizeof(T);
 
   T *aD;
@@ -143,7 +143,7 @@ __global__ void multiplyKernel(T *a, T *x, T* y, int N) {
 template <class T>
 void multiplyCuda(T *a, T *x, T *y, int N, T v) {
   int threads = _THREADS;
-  int blocks = max(ceilDiv(N, threads), 1024);
+  int blocks = min(ceilDiv(N, threads), _BLOCKS);
   size_t A1 = N * sizeof(T);
 
   T *xD, *yD;

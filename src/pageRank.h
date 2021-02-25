@@ -162,7 +162,7 @@ vector<T> pageRankPullCuda(G& x, T p, T E) {
   auto efrom = x.destinationIndices();
   auto vdata = x.vertexData();
   int threads = _THREADS;
-  int blocks = max(ceilDiv(N, threads), 1024);
+  int blocks = min(ceilDiv(N, threads), _BLOCKS);
   int VFROM1 = vfrom.size() * sizeof(int);
   int EFROM1 = efrom.size() * sizeof(int);
   int VDATA1 = N  * sizeof(int);
@@ -172,10 +172,6 @@ vector<T> pageRankPullCuda(G& x, T p, T E) {
   vector<T> r0(blocks);
   vector<T> e(blocks);
   vector<T> a(N);
-  printf("N: %d\n", N);
-  printf("vfrom: %ld\n", vfrom.size());
-  printf("efrom: %ld\n", efrom.size());
-  printf("vdata: %ld\n", vdata.size());
 
   T *eD, *r0D, *fD, *rD, *cD, *aD;
   int *vfromD, *efromD, *vdataD;
@@ -191,18 +187,23 @@ vector<T> pageRankPullCuda(G& x, T p, T E) {
   TRY( cudaMemcpy(vfromD, vfrom.data(), VFROM1, cudaMemcpyHostToDevice) );
   TRY( cudaMemcpy(efromD, efrom.data(), EFROM1, cudaMemcpyHostToDevice) );
   TRY( cudaMemcpy(vdataD, vdata.data(), VDATA1, cudaMemcpyHostToDevice) );
+  printf("VFROM1: %d\n", VFROM1);
+  printf("EFROM1: %d\n", EFROM1);
+  printf("VDATA1: %d\n", VDATA1);
+  printf("B1: %d\n", B1);
+  printf("N1: %d\n", N1);
 
-  fillKernel<<<threads, blocks>>>(rD, N, T(1)/N);
+  fillKernel<<<blocks, threads>>>(rD, N, T(1)/N);
   TRY( cudaMemcpy(r0.data(), r0D, B1, cudaMemcpyDeviceToHost) );
-  pageRankFactorKernel<<<threads, blocks>>>(fD, vdataD, p, N);
+  pageRankFactorKernel<<<blocks, threads>>>(fD, vdataD, p, N);
   TRY( cudaMemcpy(r0.data(), r0D, B1, cudaMemcpyDeviceToHost) );
   while (1) {
     printf("pageRankPullCuda\n");
-    sumIfNotKernel<<<threads, blocks>>>(r0D, rD, vdataD, N);
+    sumIfNotKernel<<<blocks, threads>>>(r0D, rD, vdataD, N);
     TRY( cudaMemcpy(r0.data(), r0D, B1, cudaMemcpyDeviceToHost) );
     T c0 = (1-p)/N + p*sum(r0)/N;
-    multiplyKernel<<<threads, blocks>>>(cD, rD, fD, N);
-    pageRankPullKernelStep<<<threads, blocks>>>(aD, cD, vfromD, efromD, c0, N);
+    multiplyKernel<<<blocks, threads>>>(cD, rD, fD, N);
+    pageRankPullKernelStep<<<blocks, threads>>>(aD, cD, vfromD, efromD, c0, N);
     errorAbsKernel<<<blocks, threads>>>(eD, rD, aD, N);
     TRY( cudaMemcpy(e.data(), eD, B1, cudaMemcpyDeviceToHost) );
     if (sum(e) < E) break;

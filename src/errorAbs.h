@@ -81,7 +81,7 @@ __global__ void errorAbsKernel(T *a, T *x, T *y, int N) {
 template <class T>
 T errorAbsCuda(T *x, T *y, int N) {
   int threads = _THREADS;
-  int blocks = max(ceilDiv(N, threads), 1024);
+  int blocks = min(ceilDiv(N, threads), _BLOCKS);
   size_t X1 = N * sizeof(T);
   size_t A1 = blocks * sizeof(T);
   unique_ptr<T> a(new T[A1]);
