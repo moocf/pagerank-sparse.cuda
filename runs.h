@@ -83,29 +83,3 @@ void runDotProduct() {
   delete[] x;
   delete[] y;
 }
-
-
-template <class G>
-void runPageRank(G& g) {
-  float t;
-  vector<float> ranks;
-  t = measureDuration([&]() { ranks = pageRank(g); });
-  printf("[%07.1f ms] pageRank\n", t); print(ranks);
-  // t = measureDuration([&]() { pageRankOmp(ranks, g); });
-  // printf("[%07.1f ms] pageRankOmp  \n", t); // print(ranks, N);
-  // t = measureDuration([&]() { pageRankCuda(ranks, g); });
-  // printf("[%07.1f ms] pageRankCuda \n", t); // print(ranks, N);
-}
-
-
-template <class G>
-void runPageRankPull(G& g) {
-  float t;
-  vector<float> ranks;
-  t = measureDuration([&]() { ranks = pageRankPull(g); });
-  printf("[%07.1f ms] pageRankPull\n", t); print(ranks);
-  t = measureDuration([&]() { ranks = pageRankPullCuda(g); });
-  printf("[%07.1f ms] pageRankCuda \n", t); print(ranks);
-  // t = measureDuration([&]() { pageRankOmp(ranks, g); });
-  // printf("[%07.1f ms] pageRankOmp  \n", t); // print(ranks, N);
-}
