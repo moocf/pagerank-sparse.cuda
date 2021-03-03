@@ -8,38 +8,41 @@ using namespace std;
 
 
 template <class G>
-void runPageRankPush(G& g) {
+void runPageRankPush(G& g, bool all) {
   float t;
   auto ranks = pageRankPush(t, g);
-  printf("[%07.1f ms] pageRankPush\n", t); print(ranks);
+  printf("[%07.1f ms] pageRankPush\n", t); if (all) print(ranks);
 }
 
 
 template <class G>
-void runPageRank(G& g) {
+void runPageRank(G& g, bool all) {
   float t;
   auto ranks1 = pageRank(t, g);
-  printf("[%07.1f ms] pageRank\n", t); print(ranks1);
+  printf("[%07.1f ms] pageRank\n", t); if(all) print(ranks1);
   auto ranks2 = pageRankCuda(t, g);
-  printf("[%07.1f ms] pageRankCuda \n", t); print(ranks2);
+  printf("[%07.1f ms] pageRankCuda \n", t); if (all) print(ranks2);
 }
 
 
 int main(int argc, char **argv) {
-  testAll();
-  printf("Loading graph ...\n");
   DiGraph<> g;
   DiGraph<int, int> h;
-  readMtx(argv[1], g);
+  char *file = argv[1];
+  bool all = argc > 2;
+
+  testAll();
+  printf("Loading graph ...\n");
+  readMtx(file, g);
   print(g);
   transposeWithDegree(g, h);
   print(h);
+  runPageRankPush(g, all);
+  runPageRank(h, all);
   // runAdd();
   // runFill();
   // runSum();
   // runErrorAbs();
   // runDotProduct();
-  runPageRankPush(g);
-  runPageRank(h);
   return 0;
 }

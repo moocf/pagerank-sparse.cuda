@@ -17,14 +17,14 @@ void readMtx(string pth, G& a) {
   ifstream f(pth);
   string ln;
 
-  getline(f, ln);
-  getline(f, ln);
+  do { getline(f, ln); }
+  while (ln[0] == '%');
   istringstream ls(ln);
   ls >> r >> c >> sz;
   while (getline(f, ln)) {
-    int i, j; float w;
+    int u, v;
     ls = istringstream(ln);
-    if (!(ls >> i >> j >> w)) break;
-    if (w > 0) a.addEdge(i, j);
+    if (!(ls >> u >> v)) break;
+    a.addEdge(u, v);
   }
 }
