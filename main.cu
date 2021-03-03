@@ -21,7 +21,7 @@ void runPageRank(G& g, bool all) {
   auto ranks1 = pageRank(t, g);
   printf("[%07.1f ms] pageRank\n", t); if(all) print(ranks1);
   auto ranks2 = pageRankCuda(t, g);
-  printf("[%07.1f ms] pageRankCuda \n", t); if (all) print(ranks2);
+  printf("[%07.1f ms] pageRankCuda\n", t); if (all) print(ranks2);
 }
 
 
@@ -32,17 +32,18 @@ int main(int argc, char **argv) {
   bool all = argc > 2;
 
   testAll();
-  printf("Loading graph ...\n");
+  printf("Loading graph %s ...\n", file);
   readMtx(file, g);
   print(g);
   transposeWithDegree(g, h);
   print(h);
-  runPageRankPush(g, all);
+  // runPageRankPush(g, all);
   runPageRank(h, all);
   // runAdd();
   // runFill();
   // runSum();
   // runErrorAbs();
   // runDotProduct();
+  printf("\n");
   return 0;
 }

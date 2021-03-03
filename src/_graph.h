@@ -1,8 +1,10 @@
 #pragma once
 #include <vector>
+#include <unordered_map>
 #include "find.h"
 
 using std::vector;
+using std::unordered_map;
 
 
 
@@ -59,12 +61,16 @@ auto getSourceOffsets(G& x) {
 
 template <class G>
 auto getDestinationIndices(G& x) {
+  using K = typename G::TKey;
   vector<int> a;
-  a.reserve(x.size());
+  unordered_map<K, int> id;
   auto ks = x.vertexKeys();
+  for (int i=0, I=ks.size(); i<I; i++)
+    id[ks[i]] = i;
+  a.reserve(x.size());
   for (auto u : x.vertices()) {
     for (auto v : x.edges(u))
-      a.push_back(find(ks, v) - ks.begin());
+      a.push_back(id[v]);
   }
   return a;
 }

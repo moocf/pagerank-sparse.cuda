@@ -129,7 +129,7 @@ auto& pageRankCore(V& a, V& r, V& f, V& c, G& x, T p, T E) {
 }
 
 template <class G, class T>
-auto pageRankPull(float& t, G& x, T p, T E) {
+auto pageRank(float& t, G& x, T p, T E) {
   auto a = x.createVertexData(T());
   auto r = x.createVertexData(T());
   auto f = x.createVertexData(T());
@@ -140,7 +140,7 @@ auto pageRankPull(float& t, G& x, T p, T E) {
 
 template <class G, class T=float>
 auto pageRank(float& t, G& x, pageRankOptions<T> o=pageRankOptions<T>()) {
-  return pageRankPull(t, x, o.damping, o.convergence);
+  return pageRank(t, x, o.damping, o.convergence);
 }
 
 
