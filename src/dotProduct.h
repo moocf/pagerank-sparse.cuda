@@ -56,6 +56,14 @@ __device__ T dotProductKernelLoop(T *x, T *y, int N, int i, int DI) {
   return a;
 }
 
+template <class T>
+__device__ T dotProductAtKernelLoop(T *x, T *y, int *is, int N, int i, int DI) {
+  T a = T();
+  for (; i<N; i+=DI)
+    a += x[is[i]] * y[is[i]];
+  return a;
+}
+
 
 template <class T>
 __global__ void dotProductKernel(T *a, T *x, T *y, int N) {
