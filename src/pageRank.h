@@ -243,7 +243,7 @@ T* pageRankCudaCore(T *e, T *r0, T *a, T *f, T *r, T *c, int *vfrom, int *efrom,
     TRY( cudaMemcpy(r0H, r0, B1, cudaMemcpyDeviceToHost) );
     T c0 = (1-p)/N + p*sum(r0H, blocks)/N;
     multiplyKernel<<<blocks, threads>>>(c, r, f, N);
-    pageRankDynamicKernel<<<blocks, threads>>>(a, c, vfrom, efrom, c0, N);
+    pageRankBlockKernel<<<blocks, threads>>>(a, c, vfrom, efrom, c0, N);
     errorAbsKernel<<<blocks, threads>>>(e, r, a, N);
     TRY( cudaMemcpy(eH, e, B1, cudaMemcpyDeviceToHost) );
     T f = sum(eH, blocks);
