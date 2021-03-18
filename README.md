@@ -56,7 +56,8 @@ git clone https://github.com/cudaf/pagerank-sparse
 
 ```bash
 # Run
-cd pagerank-sparse && nvcc -Xcompiler -fopenmp -O3 main.cu && nvprof ./a.out data/aug2d.mtx
+cd pagerank-sparse && nvcc -Xcompiler -fopenmp -O3 main.cu
+cd pagerank-sparse && nvprof ./a.out data/aug2d.mtx
 ```
 
 <br>
