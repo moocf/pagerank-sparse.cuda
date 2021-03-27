@@ -1,20 +1,23 @@
 #pragma once
-#include <time.h>
+#include <chrono>
 #include "_cuda.h"
 
+using std::chrono::milliseconds;
+using std::chrono::high_resolution_clock;
+using std::chrono::duration_cast;
 
 
 
 // In milliseconds.
 template <class F>
 float measureDuration(F fn) {
-  clock_t start = clock();
+  auto start = high_resolution_clock::now();
 
   fn();
 
-  clock_t stop = clock();
-  float duration = (float) (stop - start) / CLOCKS_PER_SEC;
-  return duration * 1000;
+  auto stop = high_resolution_clock::now();
+  auto duration = duration_cast<milliseconds>(stop - start);
+  return duration.count();
 }
 
 
