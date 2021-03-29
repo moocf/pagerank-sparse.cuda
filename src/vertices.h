@@ -20,7 +20,8 @@ auto vertices(G& x) {
 template <class G, class F>
 auto verticesBy(G& x, F fm) {
   auto a = vertices(x);
-  sort(a.begin(), a.end(), [](auto u, auto v) {
+  sort(a.begin(), a.end(), [&](auto u, auto v) {
     return fm(u) < fm(v);
   });
+  return a;
 }

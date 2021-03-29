@@ -16,6 +16,7 @@
 #include "fill.h"
 #include "multiply.h"
 #include "errorAbs.h"
+#include "vertices.h"
 #include "sourceOffsets.h"
 #include "destinationIndices.h"
 #include "vertexData.h"
@@ -23,18 +24,30 @@
 using std::vector;
 using std::unordered_map;
 using std::unique_ptr;
+using std::lower_bound;
 using std::swap;
 using std::max;
 
 
 
 
+enum struct PageRankMode {
+  BLOCK,
+  THREAD,
+  DYNAMIC,
+  SWITCHED
+};
+
+
 template <class T>
-struct pageRankOptions {
+struct PageRankOptions {
+  typedef PageRankMode Mode;
+  Mode mode;
   T damping;
   T convergence;
 
-  pageRankOptions(T _damping=0.85, T _convergence=1e-6) {
+  PageRankOptions(Mode _mode=Mode::BLOCK, T _damping=0.85, T _convergence=1e-6) {
+    mode = _mode;
     damping = _damping;
     convergence = _convergence;
   }
@@ -82,7 +95,7 @@ auto pageRankPush(float& t, G& x, T p, T E) {
 }
 
 template <class G, class T=float>
-auto pageRankPush(float& t, G& x, pageRankOptions<T> o=pageRankOptions<T>()) {
+auto pageRankPush(float& t, G& x, PageRankOptions<T> o=PageRankOptions<T>()) {
   return pageRankPush(t, x, o.damping, o.convergence);
 }
 
@@ -144,7 +157,7 @@ auto pageRank(float& t, G& x, T p, T E) {
 }
 
 template <class G, class T=float>
-auto pageRank(float& t, G& x, pageRankOptions<T> o=pageRankOptions<T>()) {
+auto pageRank(float& t, G& x, PageRankOptions<T> o=PageRankOptions<T>()) {
   return pageRank(t, x, o.damping, o.convergence);
 }
 
@@ -332,6 +345,6 @@ auto pageRankCuda(float& t, G& x, T p, T E) {
 }
 
 template <class G, class T=float>
-auto pageRankCuda(float& t, G& x, pageRankOptions<T> o=pageRankOptions<T>()) {
+auto pageRankCuda(float& t, G& x, PageRankOptions<T> o=PageRankOptions<T>()) {
   return pageRankCuda(t, x, o.damping, o.convergence);
 }
