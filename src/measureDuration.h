@@ -8,6 +8,7 @@ using std::chrono::duration_cast;
 
 
 
+
 // In milliseconds.
 template <class F>
 float measureDuration(F fn) {
