@@ -20,6 +20,7 @@
 #include "sourceOffsets.h"
 #include "destinationIndices.h"
 #include "vertexData.h"
+#include "vertexContainer.h"
 
 using std::vector;
 using std::unordered_map;
@@ -88,8 +89,8 @@ auto& pageRankPushCore(V& a, V& r, G& x, T p, T E) {
 
 template <class G, class T>
 auto pageRankPush(float& t, G& x, T p, T E) {
-  auto a = x.createVertexData(T());
-  auto r = x.createVertexData(T());
+  auto a = x.vertexContainer(T());
+  auto r = x.vertexContainer(T());
   t = measureDuration([&]() { pageRankPushCore(a, r, x, p, E); });
   return a;
 }
@@ -148,10 +149,10 @@ auto& pageRankCore(V& a, V& r, V& f, V& c, G& x, T p, T E) {
 
 template <class G, class T>
 auto pageRank(float& t, G& x, T p, T E) {
-  auto a = x.createVertexData(T());
-  auto r = x.createVertexData(T());
-  auto f = x.createVertexData(T());
-  auto c = x.createVertexData(T());
+  auto a = x.vertexContainer(T());
+  auto r = x.vertexContainer(T());
+  auto f = x.vertexContainer(T());
+  auto c = x.vertexContainer(T());
   t = measureDuration([&]() { pageRankCore(a, r, f, c, x, p, E); });
   return a;
 }
@@ -321,7 +322,7 @@ auto pageRankCuda(float& t, G& x, PageRankMode M, T p, T E) {
   TRY( cudaFree(rD) );
   TRY( cudaFree(cD) );
   TRY( cudaFree(aD) );
-  return a;
+  return vertexContainer(x, a, ks);
 }
 
 template <class G, class T=float>

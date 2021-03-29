@@ -30,10 +30,10 @@ class DiGraphBase {
   // Generate operations
   public:
   template <class T>
-  auto createVertexData(T _) { return unordered_map<K, T>(); }
+  auto vertexContainer(T _) { return unordered_map<K, T>(); }
 
   template <class T>
-  auto createEdgeData(T _)   { return unordered_map<tuple<K, K>, T>(); }
+  auto edgeContainer(T _)   { return unordered_map<tuple<K, K>, T>(); }
 };
 
 
@@ -215,5 +215,5 @@ class DiGraph<int, V, E> : public DiGraphBase<int, V, E> {
   // Generate operations
   public:
   template <class T>
-  auto createVertexData(T _) { return vector<T>(span()); }
+  auto vertexContainer(T _) { return vector<T>(span()); }
 };
