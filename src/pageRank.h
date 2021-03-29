@@ -215,38 +215,6 @@ __global__ void pageRankDynamicKernel(T *a, T *c, int *vfrom, int *efrom, T c0, 
 
 
 template <class T>
-__global__ void pageRankComboKernel(T *a, T *r, T *f, int *vfrom, int *efrom, T c0, int N) {
-  DEFINE(t, b, B, G);
-
-  for (int v=B*b+t; v<N; v+=G*B) {
-    int ebgn = vfrom[v];
-    int ideg = vfrom[v+1]-vfrom[v];
-    a[v] = c0 + dotProductAtKernelLoop(r, f, efrom+ebgn, ideg, 0, 1);
-  }
-}
-
-
-// template <class T>
-// __global__ void pageRankAllKernel() {
-//   DEFINE(t, b, B, G);
-//   __shared__ T cache[_THREADS];
-
-//   cache[t] = sumIfNotKernelLoop(r, vdata, N, B*b+t, G*B);
-//   sumKernelReduce(cache, B, t);
-//   if (t == 0) atomicAdd(r0, cache[0]);
-
-
-//   for (int v=b; v<N; v+=G) {
-//     int ebgn = vfrom[v];
-//     int ideg = vfrom[v+1]-vfrom[v];
-//     cache[t] = sumAtKernelLoop(c, efrom+ebgn, ideg, t, B);
-//     sumKernelReduce(cache, B, t);
-//     if (t == 0) a[v] = c0 + cache[0];
-//   }
-// }
-
-
-template <class T>
 T* pageRankCudaCore(T *e, T *r0, T *a, T *f, T *r, T *c, int *vfrom, int *efrom, int *vdata, int N, T p, T E) {
   int threads = _THREADS;
   int blocks = min(ceilDiv(N, threads), _BLOCKS);
@@ -269,35 +237,6 @@ T* pageRankCudaCore(T *e, T *r0, T *a, T *f, T *r, T *c, int *vfrom, int *efrom,
   }
   return a;
 }
-
-
-// template <class T>
-// __global__ void pageRankComboKernel() {
-//   fillKer
-// }
-
-
-// template <class T>
-// T* pageRankCudaCore(T *e, T *r0, T *a, T *f, T *r, T *c, int *vfrom, int *efrom, int *vdata, int N, T p, T E) {
-//   int threads = _THREADS;
-//   int blocks = min(ceilDiv(N, threads), _BLOCKS);
-//   int B1 = blocks * sizeof(T);
-//   T eH[_BLOCKS], r0H[_BLOCKS], e0 = T();
-//   fillKernel<<<blocks, threads>>>(r, N, T(1)/N);
-//   pageRankFactorKernel<<<blocks, threads>>>(f, vdata, p, N);
-//   while (1) {
-//     sumIfNotKernel<<<blocks, threads>>>(r0, r, vdata, N);
-//     sumKernel<<<1, threads>>>(r0, r0, blocks);
-//     T c0 = (1-p)/N + p*r0/N;
-//     pageRankComboStepKernel<<<blocks, threads>>>(e, a, r, f, vfrom, efrom, r0, N);
-//     TRY( cudaMemcpy(eH, e, B1, cudaMemcpyDeviceToHost) );
-//     T f = sum(eH, blocks);
-//     if (f < E || f == e0) break;
-//     swap(a, r);
-//     e0 = f;
-//   }
-//   return a;
-// }
 
 
 template <class G, class T>
