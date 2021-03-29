@@ -257,6 +257,26 @@ T* pageRankCudaCore(T *e, T *r0, T *a, T *f, T *r, T *c, int *vfrom, int *efrom,
 }
 
 
+template <class G>
+auto pageRankVertices(G& x, PageRankMode M) {
+  using K = typename G::TKey;
+  typedef PageRankMode Mode;
+  if (M != Mode::SWITCHED) return vertices(x);
+  return verticesBy(x, [&](K u) { return x.degree(u); });
+}
+
+template <class G, class K>
+int pageRankSwitchPoint(G& x, vector<K>& ks, PageRankMode M) {
+  typedef PageRankMode Mode;
+  if (M != Mode::SWITCHED) return 0;
+  int deg = int(0.5 * _THREADS);
+  auto it = lower_bound(ks.begin(), ks.end(), deg, [&](K u, int d) {
+    return x.degree(u) < d;
+  });
+  return it - ks.begin();
+}
+
+
 template <class G, class T>
 auto pageRankCuda(float& t, G& x, PageRankMode M, T p, T E) {
   int N = x.order();
