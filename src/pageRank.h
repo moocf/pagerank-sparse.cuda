@@ -215,7 +215,25 @@ __global__ void pageRankDynamicKernel(T *a, T *c, int *vfrom, int *efrom, T c0, 
 
 
 template <class T>
-T* pageRankCudaCore(T *e, T *r0, T *a, T *f, T *r, T *c, int *vfrom, int *efrom, int *vdata, int N, T p, T E) {
+void pageRankKernelCall(int blocks, int threads, T *a, T *c, int *vfrom, int *efrom, T c0, int N, PageRankMode M, int S) {
+  typedef PageRankMode Mode;
+  switch (M) {
+    default:
+    case Mode::BLOCK:   pageRankBlockKernel<<<blocks, threads>>>(a, c, vfrom, efrom, c0, N); break;
+    case Mode::THREAD:  pageRankThreadKernel<<<blocks, threads>>>(a, c, vfrom, efrom, c0, N); break;
+    // case Mode::DYNAMIC: pageRankDynamicKernel<<<blocks, threads>>>(a, c, vfrom, efrom, c0, N); break;
+    case Mode::SWITCHED:
+      pageRankThreadKernel<<<blocks, threads>>>(a, c, vfrom, efrom, c0, S);
+      pageRankBlockKernel<<<blocks, threads>>>(a+S, c, vfrom+S, efrom, c0, N-S);
+      break;
+  }
+}
+
+
+
+
+template <class T>
+T* pageRankCudaCore(T *e, T *r0, T *a, T *f, T *r, T *c, int *vfrom, int *efrom, int *vdata, int N, PageRankMode M, T p, T E, int S) {
   int threads = _THREADS;
   int blocks = min(ceilDiv(N, threads), _BLOCKS);
   int B1 = blocks * sizeof(T);
@@ -227,7 +245,7 @@ T* pageRankCudaCore(T *e, T *r0, T *a, T *f, T *r, T *c, int *vfrom, int *efrom,
     TRY( cudaMemcpy(r0H, r0, B1, cudaMemcpyDeviceToHost) );
     T c0 = (1-p)/N + p*sum(r0H, blocks)/N;
     multiplyKernel<<<blocks, threads>>>(c, r, f, N);
-    pageRankBlockKernel<<<blocks, threads>>>(a, c, vfrom, efrom, c0, N);
+    pageRankKernelCall(blocks, threads, a, c, vfrom, efrom, c0, N, M, S);
     errorAbsKernel<<<blocks, threads>>>(e, r, a, N);
     TRY( cudaMemcpy(eH, e, B1, cudaMemcpyDeviceToHost) );
     T f = sum(eH, blocks);
@@ -240,7 +258,7 @@ T* pageRankCudaCore(T *e, T *r0, T *a, T *f, T *r, T *c, int *vfrom, int *efrom,
 
 
 template <class G, class T>
-auto pageRankCuda(float& t, G& x, T p, T E) {
+auto pageRankCuda(float& t, G& x, PageRankMode M, T p, T E) {
   int N = x.order();
   auto vfrom = sourceOffsets(x);
   auto efrom = destinationIndices(x);
@@ -269,7 +287,7 @@ auto pageRankCuda(float& t, G& x, T p, T E) {
   TRY( cudaMemcpy(efromD, efrom.data(), EFROM1, cudaMemcpyHostToDevice) );
   TRY( cudaMemcpy(vdataD, vdata.data(), VDATA1, cudaMemcpyHostToDevice) );
 
-  t = measureDuration([&]() { bD = pageRankCudaCore(eD, r0D, aD, fD, rD, cD, vfromD, efromD, vdataD, N, p, E); });
+  t = measureDuration([&]() { bD = pageRankCudaCore(eD, r0D, aD, fD, rD, cD, vfromD, efromD, vdataD, N, M, p, E, 0); });
   TRY( cudaMemcpy(a.data(), bD, N1, cudaMemcpyDeviceToHost) );
 
   TRY( cudaFree(vfromD) );
@@ -285,5 +303,5 @@ auto pageRankCuda(float& t, G& x, T p, T E) {
 
 template <class G, class T=float>
 auto pageRankCuda(float& t, G& x, PageRankOptions<T> o=PageRankOptions<T>()) {
-  return pageRankCuda(t, x, o.damping, o.convergence);
+  return pageRankCuda(t, x, o.mode, o.damping, o.convergence);
 }
