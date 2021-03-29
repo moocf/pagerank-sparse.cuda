@@ -17,11 +17,16 @@ void runPageRankPush(G& g, bool all) {
 
 template <class G>
 void runPageRank(G& g, bool all) {
+  typedef PageRankMode Mode;
   float t;
   auto ranks1 = pageRank(t, g);
-  printf("[%07.1f ms] pageRank\n", t); if (all) print(ranks1);
-  auto ranks2 = pageRankCuda(t, g);
-  printf("[%07.1f ms] pageRankCuda\n", t); if (all) print(ranks2);
+  printf("[%07.1f ms] pageRank               \n", t); if (all) print(ranks1);
+  auto ranks2 = pageRankCuda(t, g, {Mode::BLOCK});
+  printf("[%07.1f ms] pageRankCuda {block}   \n", t); if (all) print(ranks2);
+  auto ranks3 = pageRankCuda(t, g, {Mode::THREAD});
+  printf("[%07.1f ms] pageRankCuda {thread}  \n", t); if (all) print(ranks3);
+  auto ranks4 = pageRankCuda(t, g, {Mode::SWITCHED});
+  printf("[%07.1f ms] pageRankCuda {switched}\n", t); if (all) print(ranks4);
 }
 
 

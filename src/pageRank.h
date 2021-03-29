@@ -279,10 +279,13 @@ int pageRankSwitchPoint(G& x, vector<K>& ks, PageRankMode M) {
 
 template <class G, class T>
 auto pageRankCuda(float& t, G& x, PageRankMode M, T p, T E) {
+  using K = typename G::TKey;
+  auto ks = pageRankVertices(x, M);
+  auto vfrom = sourceOffsets(x, ks);
+  auto efrom = destinationIndices(x, ks);
+  auto vdata = vertexData(x, ks);
+  int S = pageRankSwitchPoint(x, ks, M);
   int N = x.order();
-  auto vfrom = sourceOffsets(x);
-  auto efrom = destinationIndices(x);
-  auto vdata = vertexData(x);
   int threads = _THREADS;
   int blocks = min(ceilDiv(N, threads), _BLOCKS);
   int VFROM1 = vfrom.size() * sizeof(int);
@@ -307,7 +310,7 @@ auto pageRankCuda(float& t, G& x, PageRankMode M, T p, T E) {
   TRY( cudaMemcpy(efromD, efrom.data(), EFROM1, cudaMemcpyHostToDevice) );
   TRY( cudaMemcpy(vdataD, vdata.data(), VDATA1, cudaMemcpyHostToDevice) );
 
-  t = measureDuration([&]() { bD = pageRankCudaCore(eD, r0D, aD, fD, rD, cD, vfromD, efromD, vdataD, N, M, p, E, 0); });
+  t = measureDuration([&]() { bD = pageRankCudaCore(eD, r0D, aD, fD, rD, cD, vfromD, efromD, vdataD, N, M, p, E, S); });
   TRY( cudaMemcpy(a.data(), bD, N1, cudaMemcpyDeviceToHost) );
 
   TRY( cudaFree(vfromD) );
