@@ -69,3 +69,6 @@ cd pagerank-sparse && nvprof ./a.out data/aug2d.mtx
 - [PageRank Algorithm, Mining massive Datasets (CS246), Stanford University](http://snap.stanford.edu/class/cs246-videos-2019/lec9_190205-cs246-720.mp4)
 - [CUDA by Example :: Jason Sanders, Edward Kandrot](http://www.mat.unimi.it/users/sansotte/cuda/CUDA_by_Example.pdf)
 - [RAPIDS CUDA DataFrame Internals for C++ Developers - S91043](https://developer.download.nvidia.com/video/gputechconf/gtc/2019/presentation/s91043-rapids-cuda-dataframe-internals-for-c++-developers.pdf)
+- [lower_bound == upper_bound](https://stackoverflow.com/a/12159150/1413259)
+- [Switch statement: must default be the last case?](https://stackoverflow.com/a/3110163/1413259)
+- [Equivalent of “using namespace X” for scoped enumerations?](https://stackoverflow.com/a/9450358/1413259)
