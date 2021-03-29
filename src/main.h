@@ -1,7 +1,6 @@
 #pragma once
 #include "Graph.h"
 #include "DiGraph.h"
-#include "CompactDiGraph.h"
 #include "ceilDiv.h"
 #include "erase.h"
 #include "filter.h"

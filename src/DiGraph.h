@@ -4,7 +4,6 @@
 #include <unordered_map>
 #include <utility>
 #include "_support.h"
-#include "_graph.h"
 #include "find.h"
 #include "erase.h"
 #include "range.h"
@@ -27,46 +26,6 @@ class DiGraphBase {
   using TKey    = K;
   using TVertex = V;
   using TEdge   = E;
-
-  // Read operations
-  public:
-  auto& base()   { return *this; }
-  auto& root()   { return *this; }
-  int span()     { return 0; }
-  int order()    { return 0; }
-  int size()     { return 0; }
-  bool isEmpty() { return true; }
-
-  bool hasVertex(K u)    { return false; }
-  bool hasEdge(K u, K v) { return false; }
-  auto nonVertices() { return vector<K>(); }
-  auto vertices()    { return vector<K>(); }
-  auto edges(K u)    { return vector<K>(); }
-  auto inEdges(K v)  { return vector<K>(); }
-  int degree(K u)    { return 0; }
-  int inDegree(K v)  { return 0; }
-
-  V vertexData(K u)    { return V(); }
-  E edgeData(K u, K v) { return E(); }
-  void setVertexData(K u, V d)    {}
-  void setEdgeData(K u, K v, E d) {}
-
-  // Write operations
-  public:
-  void addVertex(K u, V d=V())    {}
-  void addEdge(K u, K v, E d=E()) {}
-  void removeEdge(K u, K v) {}
-  void removeEdges(K u)     {}
-  void removeInEdges(K v)   {}
-  void removeVertex(K u)    {}
-
-  // Access operations
-  public:
-  auto vertexKeys() { return getVertexKeys(*this); }
-  auto vertexData() { return getVertexData(*this); }
-  auto edgeData() { return getEdgeData(*this); }
-  auto sourceOffsets() { return getSourceOffsets(*this); }
-  auto destinationIndices() { return getDestinationIndices(*this); }
 
   // Generate operations
   public:
@@ -98,11 +57,9 @@ class DiGraph : public DiGraphBase<K, V, E> {
   // Read operations
   public:
   auto& base()   { return *this; }
-  auto& root()   { return *this; }
   int span()     { return n(); }
   int order()    { return n(); }
   int size()     { return M; }
-  bool isEmpty() { return n() == 0; }
 
   bool hasVertex(K u)    { return ve.find(u) != ve.end(); }
   bool hasEdge(K u, K v) { return hasVertex(u) && ex(u, v); }
@@ -160,14 +117,6 @@ class DiGraph : public DiGraphBase<K, V, E> {
     removeInEdges(u);
     ve.erase(u);
   }
-
-  // Access operations
-  public:
-  auto vertexKeys() { return getVertexKeys(*this); }
-  auto vertexData() { return getVertexData(*this); }
-  auto edgeData() { return getEdgeData(*this); }
-  auto sourceOffsets() { return getSourceOffsets(*this); }
-  auto destinationIndices() { return getDestinationIndices(*this); }
 };
 
 
@@ -192,11 +141,9 @@ class DiGraph<int, V, E> : public DiGraphBase<int, V, E> {
   // Read operations
   public:
   auto& base()   { return *this; }
-  auto& root()   { return *this; }
   int span()     { return s(); }
   int order()    { return N; }
   int size()     { return M; }
-  bool isEmpty() { return N == 0; }
 
   bool hasVertex(int u)      { return u < s() && vex[u]; }
   bool hasEdge(int u, int v) { return u < s() && ex(u, v); }
@@ -264,14 +211,6 @@ class DiGraph<int, V, E> : public DiGraphBase<int, V, E> {
     vex[u] = false;
     N--;
   }
-
-  // Access operations
-  public:
-  auto vertexKeys() { return getVertexKeys(*this); }
-  auto vertexData() { return getVertexData(*this); }
-  auto edgeData() { return getEdgeData(*this); }
-  auto sourceOffsets() { return getSourceOffsets(*this); }
-  auto destinationIndices() { return getDestinationIndices(*this); }
 
   // Generate operations
   public:

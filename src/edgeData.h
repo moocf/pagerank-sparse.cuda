@@ -7,7 +7,7 @@ using std::vector;
 
 
 template <class G, class C>
-auto edgeData(G& x, C& ks) {
+auto edgeData(G& x, C&& ks) {
   using E = typename G::TEdge;
   vector<E> a;
   for (auto u : ks) {

@@ -7,7 +7,7 @@ using std::vector;
 
 
 template <class G, class C>
-auto sourceOffsets(G& x, C& ks) {
+auto sourceOffsets(G& x, C&& ks) {
   int i = 0;
   vector<int> a;
   a.reserve(ks.size()+1);

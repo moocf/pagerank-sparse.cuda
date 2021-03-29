@@ -9,7 +9,7 @@ using std::unordered_map;
 
 
 template <class G, class C>
-auto destinationIndices(G& x, C& ks) {
+auto destinationIndices(G& x, C&& ks) {
   using K = typename G::TKey;
   vector<int> a;
   unordered_map<K, int> id;

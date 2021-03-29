@@ -16,6 +16,9 @@
 #include "fill.h"
 #include "multiply.h"
 #include "errorAbs.h"
+#include "sourceOffsets.h"
+#include "destinationIndices.h"
+#include "vertexData.h"
 
 using std::vector;
 using std::unordered_map;
@@ -287,9 +290,9 @@ T* pageRankCudaCore(T *e, T *r0, T *a, T *f, T *r, T *c, int *vfrom, int *efrom,
 template <class G, class T>
 auto pageRankCuda(float& t, G& x, T p, T E) {
   int N = x.order();
-  auto vfrom = x.sourceOffsets();
-  auto efrom = x.destinationIndices();
-  auto vdata = x.vertexData();
+  auto vfrom = sourceOffsets(x);
+  auto efrom = destinationIndices(x);
+  auto vdata = vertexData(x);
   int threads = _THREADS;
   int blocks = min(ceilDiv(N, threads), _BLOCKS);
   int VFROM1 = vfrom.size() * sizeof(int);
