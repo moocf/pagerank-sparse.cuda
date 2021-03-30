@@ -1,9 +1,11 @@
 #pragma once
 #include <vector>
 #include <unordered_map>
+#include <algorithm>
 
 using std::vector;
 using std::unordered_map;
+using std::sort;
 
 
 
@@ -19,6 +21,7 @@ auto destinationIndices(G& x, C&& ks) {
   for (auto u : ks) {
     for (auto v : x.edges(u))
       a.push_back(id[v]);
+    sort(a.end()-x.degree(u), a.end());
   }
   return a;
 }
