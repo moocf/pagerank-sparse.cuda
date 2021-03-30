@@ -21,7 +21,7 @@ auto destinationIndices(G& x, C&& ks) {
   for (auto u : ks) {
     for (auto v : x.edges(u))
       a.push_back(id[v]);
-    sort(a.end()-x.degree(u), a.end());
+    // sort(a.end()-x.degree(u), a.end());
   }
   return a;
 }
