@@ -13,7 +13,7 @@
 
 #ifndef _BLOCKS
 /** Max. blocks per grid. */
-#define _BLOCKS 1024
+#define _BLOCKS 4096
 #endif
 
 
