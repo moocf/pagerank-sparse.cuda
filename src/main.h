@@ -22,4 +22,5 @@
 #include "transpose.h"
 #include "dfs.h"
 #include "components.h"
+#include "sort.h"
 #include "pageRank.h"
