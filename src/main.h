@@ -20,4 +20,6 @@
 #include "read.h"
 #include "copy.h"
 #include "transpose.h"
+#include "dfs.h"
+#include "components.h"
 #include "pageRank.h"
