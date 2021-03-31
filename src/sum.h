@@ -98,7 +98,7 @@ __device__ T sumKernelLoop(T *x, int N, int i, int DI) {
 template <class T>
 __global__ void sumKernel(T *a, T *x, int N) {
   DEFINE(t, b, B, G);
-  __shared__ T cache[_THREADS];
+  __shared__ T cache[BLOCK_DIM];
 
   cache[t] = sumKernelLoop(x, N, B*b+t, G*B);
   sumKernelReduce(cache, B, t);
@@ -108,23 +108,23 @@ __global__ void sumKernel(T *a, T *x, int N) {
 
 template <class T>
 T sumCuda(T *x, int N) {
-  int threads = _THREADS;
-  int blocks = min(ceilDiv(N, threads), _BLOCKS);
-  size_t X1 = N * sizeof(T);
-  size_t A1 = blocks * sizeof(T);
-  unique_ptr<T> a(new T[A1]);
+  int B = BLOCK_DIM;
+  int G = min(ceilDiv(N, B), GRID_DIM);
+  size_t N1 = N * sizeof(T);
+  size_t G1 = G * sizeof(T);
+  unique_ptr<T> a(new T[G1]);
 
   T *xD, *aD;
-  TRY( cudaMalloc(&xD, X1) );
-  TRY( cudaMalloc(&aD, A1) );
-  TRY( cudaMemcpy(xD, x, X1, cudaMemcpyHostToDevice) );
+  TRY( cudaMalloc(&xD, N1) );
+  TRY( cudaMalloc(&aD, G1) );
+  TRY( cudaMemcpy(xD, x, N1, cudaMemcpyHostToDevice) );
 
-  sumKernel<<<blocks, threads>>>(aD, xD, N);
-  TRY( cudaMemcpy(a.get(), aD, A1, cudaMemcpyDeviceToHost) );
+  sumKernel<<<G, B>>>(aD, xD, N);
+  TRY( cudaMemcpy(a.get(), aD, G1, cudaMemcpyDeviceToHost) );
 
   TRY( cudaFree(xD) );
   TRY( cudaFree(aD) );
-  return sum(a.get(), blocks);
+  return sum(a.get(), G);
 }
 
 template <class T>
@@ -147,7 +147,7 @@ __device__ T sumAtKernelLoop(T *x, int *is, int N, int i, int DI) {
 template <class T>
 __global__ void sumAtKernel(T *a, T *x, T *is, int N) {
   DEFINE(t, b, B, G);
-  __shared__ T cache[_THREADS];
+  __shared__ T cache[BLOCK_DIM];
 
   cache[t] = sumAtKernelLoop(x, is, N, B*b+t, G*B);
   sumKernelReduce(cache, B, t);
@@ -169,7 +169,7 @@ __device__ T sumIfNotKernelLoop(T *x, C *cs, int N, int i, int DI) {
 template <class T, class C>
 __global__ void sumIfNotKernel(T *a, T *x, C *cs, int N) {
   DEFINE(t, b, B, G);
-  __shared__ T cache[_THREADS];
+  __shared__ T cache[BLOCK_DIM];
 
   cache[t] = sumIfNotKernelLoop(x, cs, N, B*b+t, G*B);
   sumKernelReduce(cache, B, t);

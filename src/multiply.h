@@ -103,16 +103,16 @@ __global__ void multiplyKernel(T *a, int N, T v) {
 
 template <class T>
 void multiplyCuda(T *a, int N, T v) {
-  int threads = _THREADS;
-  int blocks = min(ceilDiv(N, threads), _BLOCKS);
-  size_t A1 = N * sizeof(T);
+  int B = BLOCK_DIM;
+  int G = min(ceilDiv(N, B), GRID_DIM);
+  size_t N1 = N * sizeof(T);
 
   T *aD;
-  TRY( cudaMalloc(&aD, A1) );
-  TRY( cudaMemcpy(aD, a, A1, cudaMemcpyHostToDevice) );
+  TRY( cudaMalloc(&aD, N1) );
+  TRY( cudaMemcpy(aD, a, N1, cudaMemcpyHostToDevice) );
 
-  multiplyKernel<<<blocks, threads>>>(aD, N, v);
-  TRY( cudaMemcpy(a, aD, A1, cudaMemcpyDeviceToHost) );
+  multiplyKernel<<<G, B>>>(aD, N, v);
+  TRY( cudaMemcpy(a, aD, N1, cudaMemcpyDeviceToHost) );
 
   TRY( cudaFree(aD) );
 }
@@ -142,18 +142,18 @@ __global__ void multiplyKernel(T *a, T *x, T* y, int N) {
 
 template <class T>
 void multiplyCuda(T *a, T *x, T *y, int N, T v) {
-  int threads = _THREADS;
-  int blocks = min(ceilDiv(N, threads), _BLOCKS);
-  size_t A1 = N * sizeof(T);
+  int B = BLOCK_DIM;
+  int G = min(ceilDiv(N, B), GRID_DIM);
+  size_t N1 = N * sizeof(T);
 
   T *xD, *yD;
-  TRY( cudaMalloc(&xD, A1) );
-  TRY( cudaMalloc(&yD, A1) );
-  TRY( cudaMemcpy(xD, x, A1, cudaMemcpyHostToDevice) );
-  TRY( cudaMemcpy(yD, y, A1, cudaMemcpyHostToDevice) );
+  TRY( cudaMalloc(&xD, N1) );
+  TRY( cudaMalloc(&yD, N1) );
+  TRY( cudaMemcpy(xD, x, N1, cudaMemcpyHostToDevice) );
+  TRY( cudaMemcpy(yD, y, N1, cudaMemcpyHostToDevice) );
 
-  multiplyKernel<<<blocks, threads>>>(xD, xD, yD, N);
-  TRY( cudaMemcpy(a, xD, A1, cudaMemcpyDeviceToHost) );
+  multiplyKernel<<<G, B>>>(xD, xD, yD, N);
+  TRY( cudaMemcpy(a, xD, N1, cudaMemcpyDeviceToHost) );
 
   TRY( cudaFree(xD) );
   TRY( cudaFree(yD) );

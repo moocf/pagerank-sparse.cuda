@@ -6,14 +6,14 @@
 
 
 
-#ifndef _THREADS
+#ifndef BLOCK_DIM
 /** Default threads per block. */
-#define _THREADS 64
+#define BLOCK_DIM 64
 #endif
 
-#ifndef _BLOCKS
+#ifndef GRID_DIM
 /** Max. blocks per grid. */
-#define _BLOCKS 4096
+#define GRID_DIM 4096
 #endif
 
 

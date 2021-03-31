@@ -68,7 +68,7 @@ __device__ T dotProductAtKernelLoop(T *x, T *y, int *is, int N, int i, int DI) {
 template <class T>
 __global__ void dotProductKernel(T *a, T *x, T *y, int N) {
   DEFINE(t, b, B, G);
-  __shared__ T cache[_THREADS];
+  __shared__ T cache[BLOCK_DIM];
 
   cache[t] = dotProductKernelLoop(x, y, N, B*b+t, G*B);
   sumKernelReduce(cache, B, t);
@@ -78,26 +78,26 @@ __global__ void dotProductKernel(T *a, T *x, T *y, int N) {
 
 template <class T>
 T dotProductCuda(T *x, T *y, int N) {
-  int threads = _THREADS;
-  int blocks = min(ceilDiv(N, threads), _BLOCKS);
-  size_t X1 = N * sizeof(T);
-  size_t A1 = blocks * sizeof(T);
-  unique_ptr<T> a(new T[A1]);
+  int B = BLOCK_DIM;
+  int G = min(ceilDiv(N, B), GRID_DIM);
+  size_t N1 = N * sizeof(T);
+  size_t G1 = G * sizeof(T);
+  unique_ptr<T> a(new T[G1]);
 
   T *xD, *yD, *aD;
-  TRY( cudaMalloc(&xD, X1) );
-  TRY( cudaMalloc(&yD, X1) );
-  TRY( cudaMalloc(&aD, A1) );
-  TRY( cudaMemcpy(xD, x, X1, cudaMemcpyHostToDevice) );
-  TRY( cudaMemcpy(yD, y, X1, cudaMemcpyHostToDevice) );
+  TRY( cudaMalloc(&xD, N1) );
+  TRY( cudaMalloc(&yD, N1) );
+  TRY( cudaMalloc(&aD, G1) );
+  TRY( cudaMemcpy(xD, x, N1, cudaMemcpyHostToDevice) );
+  TRY( cudaMemcpy(yD, y, N1, cudaMemcpyHostToDevice) );
 
-  dotProductKernel<<<blocks, threads>>>(aD, xD, yD, N);
-  TRY( cudaMemcpy(a.get(), aD, A1, cudaMemcpyDeviceToHost) );
+  dotProductKernel<<<G, B>>>(aD, xD, yD, N);
+  TRY( cudaMemcpy(a.get(), aD, G1, cudaMemcpyDeviceToHost) );
 
   TRY( cudaFree(yD) );
   TRY( cudaFree(xD) );
   TRY( cudaFree(aD) );
-  return sum(a.get(), blocks);
+  return sum(a.get(), G);
 }
 
 template <class T>

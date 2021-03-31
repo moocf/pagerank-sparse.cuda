@@ -82,16 +82,16 @@ __global__ void fillKernel(T *a, int N, T v) {
 
 template <class T>
 void fillCuda(T *a, int N, T v) {
-  int threads = _THREADS;
-  int blocks = min(ceilDiv(N, threads), _BLOCKS);
-  size_t A1 = N * sizeof(T);
+  int B = BLOCK_DIM;
+  int G = min(ceilDiv(N, B), GRID_DIM);
+  size_t N1 = N * sizeof(T);
 
   T *aD;
-  TRY( cudaMalloc(&aD, A1) );
-  TRY( cudaMemcpy(aD, a, A1, cudaMemcpyHostToDevice) );
+  TRY( cudaMalloc(&aD, N1) );
+  TRY( cudaMemcpy(aD, a, N1, cudaMemcpyHostToDevice) );
 
-  fillKernel<<<blocks, threads>>>(aD, N, v);
-  TRY( cudaMemcpy(a, aD, A1, cudaMemcpyDeviceToHost) );
+  fillKernel<<<G, B>>>(aD, N, v);
+  TRY( cudaMemcpy(a, aD, N1, cudaMemcpyDeviceToHost) );
 
   TRY( cudaFree(aD) );
 }
