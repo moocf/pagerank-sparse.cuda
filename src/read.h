@@ -3,6 +3,7 @@
 #include <sstream>
 #include <string>
 
+using std::ios;
 using std::string;
 using std::ifstream;
 using std::istringstream;
@@ -14,17 +15,24 @@ using std::getline;
 template <class G>
 void readMtx(string pth, G& a) {
   int r, c, sz;
+  string b;
   ifstream f(pth);
-  string ln;
 
-  do { getline(f, ln); }
+  f.seekg(0, ios::end);
+  b.resize(f.tellg());
+
+  f.seekg(0);
+  f.read((char*) b.data(), b.size());
+
+  string ln;
+  istringstream bs(b);
+  do { getline(bs, ln); }
   while (ln[0] == '%');
+
   istringstream ls(ln);
   ls >> r >> c >> sz;
-  while (getline(f, ln)) {
-    int u, v;
-    ls = istringstream(ln);
-    if (!(ls >> u >> v)) break;
+
+  int u, v;
+  while (bs >> u >> v)
     a.addEdge(u, v);
-  }
 }
