@@ -370,7 +370,7 @@ auto pageRankCuda(float& t, G& x, PageRankMode M, T p, T E) {
   TRY( cudaMemcpyAsync(vdataD, vdata.data(), VDATA1, cudaMemcpyHostToDevice, s1) );
   TRY( cudaStreamSynchronize(s1) );
 
-  t = measureDuration([&]() { bD = pageRankCudaCoreStreamed(s1, s2, s3, e, r0, eD, r0D, aD, fD, rD, cD, vfromD, efromD, vdataD, N, M, p, E, S); });
+  t = measureDuration([&]() { bD = pageRankCudaCore(s1, s2, s3, e, r0, eD, r0D, aD, fD, rD, cD, vfromD, efromD, vdataD, N, M, p, E, S); });
   TRY( cudaMemcpy(a.data(), bD, N1, cudaMemcpyDeviceToHost) );
 
   TRY( cudaFree(eD) );
