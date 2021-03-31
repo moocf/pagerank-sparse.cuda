@@ -257,6 +257,30 @@ T* pageRankCudaCore(T *e, T *r0, T *a, T *f, T *r, T *c, int *vfrom, int *efrom,
   return a;
 }
 
+// template <class T>
+// T* pageRankCudaCore(T *e, T *r0, T *a, T *f, T *r, T *c, int *vfrom, int *efrom, int *vdata, int N, PageRankMode M, T p, T E, int S) {
+//   int threads = _THREADS;
+//   int blocks = min(ceilDiv(N, threads), _BLOCKS);
+//   int B1 = blocks * sizeof(T);
+//   T eH[_BLOCKS], r0H[_BLOCKS], e0 = T();
+//   fillKernel<<<blocks, threads, 0, s1>>>(r, N, T(1)/N);
+//   pageRankFactorKernel<<<blocks, threads, 0, s2>>>(f, vdata, p, N);
+//   while (1) {
+//     sumIfNotKernel<<<blocks, threads, 0, s1>>>(r0, r, vdata, N);
+//     multiplyKernel<<<blocks, threads, 0, s2>>>(c, r, f, N);
+//     TRY( cudaMemcpy(r0H, r0, B1, cudaMemcpyDeviceToHost) );
+//     T c0 = (1-p)/N + p*sum(r0H, blocks)/N;
+//     pageRankKernelCall(blocks, threads, a, c, vfrom, efrom, c0, N, M, S);
+//     errorAbsKernel<<<blocks, threads, 0, s3>>>(e, r, a, N);
+//     TRY( cudaMemcpy(eH, e, B1, cudaMemcpyDeviceToHost) );
+//     T f = sum(eH, blocks);
+//     if (f < E || f == e0) break;
+//     swap(a, r);
+//     e0 = f;
+//   }
+//   return a;
+// }
+
 
 template <class G>
 auto pageRankVertices(G& x, PageRankMode M) {
@@ -284,7 +308,7 @@ auto pageRankCuda(float& t, G& x, PageRankMode M, T p, T E) {
   auto ks = pageRankVertices(x, M);
   auto vfrom = sourceOffsets(x, ks);
   auto efrom = destinationIndices(x, ks);
-  auto vdata = vertexData(x, ks);
+  auto vdata = vertexData(x, ks);  // outDegree
   int S = pageRankSwitchPoint(x, ks, M);
   int N = x.order();
   int threads = _THREADS;
