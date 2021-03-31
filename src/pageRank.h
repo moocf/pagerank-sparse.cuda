@@ -218,18 +218,14 @@ __global__ void pageRankDynamicKernel(T *a, T *c, int *vfrom, int *efrom, T c0, 
 template <class T>
 void pageRankKernelCall(int blocks, int threads, T *a, T *c, int *vfrom, int *efrom, T c0, int N, PageRankMode M, int S) {
   typedef PageRankMode Mode;
-  int BB = min(N, _BLOCKS);
-  int BT = min(ceilDiv(N, threads), _BLOCKS);
-  int BT1 = min(ceilDiv(S, threads), _BLOCKS);
-  int BS1 = min(N-S, _BLOCKS);
   switch (M) {
     default:
-    case Mode::BLOCK:   pageRankBlockKernel<<<BB, threads>>>(a, c, vfrom, efrom, c0, N); break;
-    case Mode::THREAD:  pageRankThreadKernel<<<BT, threads>>>(a, c, vfrom, efrom, c0, N); break;
+    case Mode::BLOCK:   pageRankBlockKernel<<<blocks, threads>>>(a, c, vfrom, efrom, c0, N); break;
+    case Mode::THREAD:  pageRankThreadKernel<<<blocks, threads>>>(a, c, vfrom, efrom, c0, N); break;
     // case Mode::DYNAMIC: pageRankDynamicKernel<<<blocks, threads>>>(a, c, vfrom, efrom, c0, N); break;
     case Mode::SWITCHED:
-      pageRankThreadKernel<<<BT1, threads>>>(a, c, vfrom, efrom, c0, S);
-      pageRankBlockKernel<<<BS1, threads>>>(a+S, c, vfrom+S, efrom, c0, N-S);
+      pageRankThreadKernel<<<blocks, threads>>>(a, c, vfrom, efrom, c0, S);
+      pageRankBlockKernel<<<blocks, threads>>>(a+S, c, vfrom+S, efrom, c0, N-S);
       break;
   }
 }
@@ -302,6 +298,7 @@ auto pageRankCuda(float& t, G& x, PageRankMode M, T p, T E) {
 
   T *eD, *r0D, *fD, *rD, *cD, *aD, *bD;
   int *vfromD, *efromD, *vdataD;
+  // TRY( cudaSetDeviceFlags(cudaDeviceMapHost) );
   TRY( cudaMalloc(&vfromD, VFROM1) );
   TRY( cudaMalloc(&efromD, EFROM1) );
   TRY( cudaMalloc(&vdataD, VDATA1) );
