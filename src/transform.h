@@ -65,3 +65,15 @@ template <class C, class F>
 auto transformW(C&& x, const F& fn) {
   return transformW(x.begin(), x.end(), fn);
 }
+
+
+
+
+template <class T, class C, class F>
+auto transformFrom(vector<T>& x, C&& is, F fn) {
+  using U = decltype(fn(x[0]));
+  vector<U> a;
+  for (int i : is)
+    a.push_back(fn(x[i]));
+  return a;
+}
