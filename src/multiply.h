@@ -23,7 +23,7 @@ void multiplyValue(T *a, int N, T v) {
 
 template <class C, class T>
 void multiplyValue(C& a, T v) {
-  multiply(a.data(), a.size(), v);
+  multiplyValue(a.data(), a.size(), v);
 }
 
 template <class K, class T>
@@ -239,7 +239,7 @@ void multiplyAbsCuda(T *a, T *x, T *y, int N, T v) {
   TRY( cudaMemcpy(xD, x, N1, cudaMemcpyHostToDevice) );
   TRY( cudaMemcpy(yD, y, N1, cudaMemcpyHostToDevice) );
 
-  multiplyKernel<<<G, B>>>(xD, xD, yD, N);
+  multiplyAbsKernel<<<G, B>>>(xD, xD, yD, N);
   TRY( cudaMemcpy(a, xD, N1, cudaMemcpyDeviceToHost) );
 
   TRY( cudaFree(xD) );
