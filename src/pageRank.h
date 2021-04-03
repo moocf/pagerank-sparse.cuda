@@ -2,6 +2,7 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
+#include <cmath>
 #include <utility>
 #include <memory>
 #include <omp.h>
@@ -10,6 +11,7 @@
 #include "ceilDiv.h"
 #include "measureDuration.h"
 #include "count.h"
+#include "bit.h"
 #include "add.h"
 #include "sum.h"
 #include "dotProduct.h"
@@ -28,7 +30,7 @@ using std::unique_ptr;
 using std::lower_bound;
 using std::swap;
 using std::max;
-
+using std::abs;
 
 
 
@@ -146,72 +148,86 @@ __global__ void pageRankFactorKernel(T *a, V *vdata, T p, int N) {
 }
 
 
+__device__ bool pageRankDoneKernel(int *vconv, int v) {
+  return vconv && getBit(vconv, v);
+}
+
 template <class T>
-__global__ void pageRankBlockKernel(T *a, T *c, int *vfrom, int *efrom, T c0, int N) {
+__device__ pageRankSetKernel(T *a, int *vconv, T E, int v, T r) {
+  if (vconv && abs(a[v] - r) < E) setBit(vconv, v);
+  a[v] = r;
+}
+
+
+template <class T>
+__global__ void pageRankBlockKernel(T *a, T *c, int *vconv, int *vfrom, int *efrom, T c0, int N, T E) {
   DEFINE(t, b, B, G);
   __shared__ T cache[BLOCK_DIM];
 
   for (int v=b; v<N; v+=G) {
+    if (pageRankDoneKernel(vconv, v)) continue;
     int ebgn = vfrom[v];
     int ideg = vfrom[v+1]-vfrom[v];
     cache[t] = sumAtKernelLoop(c, efrom+ebgn, ideg, t, B);
     sumKernelReduce(cache, B, t);
-    if (t == 0) a[v] = c0 + cache[0];
+    if (t == 0) pageRankSetKernel(a, vconv, E, v, c0 + cache[0]);
   }
 }
 
 
 template <class T>
-__global__ void pageRankThreadKernel(T *a, T *c, int *vfrom, int *efrom, T c0, int N) {
+__global__ void pageRankThreadKernel(T *a, T *c, int *vconv, int *vfrom, int *efrom, T c0, int N, T E) {
   DEFINE(t, b, B, G);
 
   for (int v=B*b+t; v<N; v+=G*B) {
+    if (vconv && getBit(vconv, v)) continue;
     int ebgn = vfrom[v];
     int ideg = vfrom[v+1]-vfrom[v];
-    a[v] = c0 + sumAtKernelLoop(c, efrom+ebgn, ideg, 0, 1);
+    pageRankSetKernel(a, vconv, E, v, c0 + sumAtKernelLoop(c, efrom+ebgn, ideg, 0, 1));
   }
 }
 
 
 template <class T>
-__global__ void pageRankDynamicKernel(T *a, T *c, int *vfrom, int *efrom, T c0, int N) {
+__global__ void pageRankDynamicKernel(T *a, T *c, int *vconv, int *vfrom, int *efrom, T c0, int N, T E) {
   DEFINE(t, b, B, G);
 
   for (int v=B*b+t; v<N; v+=G*B) {
+    if (vconv && getBit(vconv, v)) continue;
     int ebgn = vfrom[v];
     int ideg = vfrom[v+1]-vfrom[v];
-    if (ideg < B/2) a[v] = c0 + sumAtKernelLoop(c, efrom+ebgn, ideg, 0, 1);
-    else pageRankBlockKernel<<<1, B>>>(&a[v], c, &vfrom[v], efrom, c0, 1);
+    if (ideg >= B/2) pageRankBlockKernel<<<1, B>>>(&a[v], c, &vfrom[v], efrom, c0, 1);
+    else pageRankSetKernel(a, vconv, E, v, c0 + sumAtKernelLoop(c, efrom+ebgn, ideg, 0, 1));
   }
 }
 
 
 template <class T>
-void pageRankKernelCall(int G, int B, T *a, T *c, int *vfrom, int *efrom, T c0, int N, PageRankMode M, int S) {
+void pageRankKernelCall(int G, int B, T *a, T *c, int *vconv, int *vfrom, int *efrom, T c0, int N, T E, PageRankMode M, int S) {
   typedef PageRankMode Mode;
   switch (M) {
     default:
-    case Mode::BLOCK:   pageRankBlockKernel <<<G, B>>>(a, c, vfrom, efrom, c0, N); break;
-    case Mode::THREAD:  pageRankThreadKernel<<<G, B>>>(a, c, vfrom, efrom, c0, N); break;
-    // case Mode::DYNAMIC: pageRankDynamicKernel<<<G, B>>>(a, c, vfrom, efrom, c0, N); break;
+    case Mode::BLOCK:   pageRankBlockKernel <<<G, B>>>(a, c, vconv, vfrom, efrom, c0, N, E); break;
+    case Mode::THREAD:  pageRankThreadKernel<<<G, B>>>(a, c, vconv, vfrom, efrom, c0, N, E); break;
+    // case Mode::DYNAMIC: pageRankDynamicKernel<<<G, B>>>(a, c, vconv, vfrom, efrom, c0, N, E); break;
     case Mode::SWITCHED:
-      pageRankThreadKernel<<<G, B>>>(a,   c, vfrom,   efrom, c0, S);
-      pageRankBlockKernel <<<G, B>>>(a+S, c, vfrom+S, efrom, c0, N-S);
+      pageRankThreadKernel<<<G, B>>>(a,   c, vconv,   vfrom,   efrom, c0, S,   E);
+      pageRankBlockKernel <<<G, B>>>(a+S, c, vconv+S, vfrom+S, efrom, c0, N-S, E);
       break;
   }
 }
 
 template <class T>
-void pageRankKernelCallStreamed(int G, int B, cudaStream_t s1, cudaStream_t s2, T *a, T *c, int *vfrom, int *efrom, T c0, int N, PageRankMode M, int S) {
+void pageRankKernelCallStreamed(int G, int B, cudaStream_t s1, cudaStream_t s2, T *a, T *c, int *vconv, int *vfrom, int *efrom, T c0, int N, T E, PageRankMode M, int S) {
   typedef PageRankMode Mode;
   switch (M) {
     default:
-    case Mode::BLOCK:   pageRankBlockKernel <<<G, B, 0, s1>>>(a, c, vfrom, efrom, c0, N); break;
-    case Mode::THREAD:  pageRankThreadKernel<<<G, B, 0, s1>>>(a, c, vfrom, efrom, c0, N); break;
-    // case Mode::DYNAMIC: pageRankDynamicKernel<<<G, B, 0, s1>>>(a, c, vfrom, efrom, c0, N); break;
+    case Mode::BLOCK:   pageRankBlockKernel <<<G, B, 0, s1>>>(a, c, vconv, vfrom, efrom, c0, N, E); break;
+    case Mode::THREAD:  pageRankThreadKernel<<<G, B, 0, s1>>>(a, c, vconv, vfrom, efrom, c0, N, E); break;
+    // case Mode::DYNAMIC: pageRankDynamicKernel<<<G, B, 0, s1>>>(a, c, vconv, vfrom, efrom, c0, N, E); break;
     case Mode::SWITCHED:
-      pageRankThreadKernel<<<G, B, 0, s1>>>(a,   c, vfrom,   efrom, c0, S);
-      pageRankBlockKernel <<<G, B, 0, s2>>>(a+S, c, vfrom+S, efrom, c0, N-S);
+      pageRankThreadKernel<<<G, B, 0, s1>>>(a,   c, vconv,   vfrom,   efrom, c0, S,   E);
+      pageRankBlockKernel <<<G, B, 0, s2>>>(a+S, c, vconv+S, vfrom+S, efrom, c0, N-S, E);
       break;
   }
 }
@@ -220,7 +236,7 @@ void pageRankKernelCallStreamed(int G, int B, cudaStream_t s1, cudaStream_t s2, 
 
 
 template <class T>
-T* pageRankCudaLoop(int G, int B, T* e, T *r0, T *eD, T *r0D, T *aD, T *fD, T *rD, T *cD, int *vfromD, int *efromD, int *vdataD, int N, int i, int n, PageRankMode M, T p, T E, int S) {
+T* pageRankCudaLoop(int G, int B, T* e, T *r0, T *eD, T *r0D, T *aD, T *fD, T *rD, T *cD, int *vconvD, int *vfromD, int *efromD, int *vdataD, int N, int i, int n, PageRankMode M, T p, T E, int S) {
   T e0 = T();
   int G1 = G * sizeof(T);
   while (1) {
@@ -228,7 +244,7 @@ T* pageRankCudaLoop(int G, int B, T* e, T *r0, T *eD, T *r0D, T *aD, T *fD, T *r
     multiplyKernel<<<G, B>>>(cD+i, rD+i, fD+i,   n);
     TRY( cudaMemcpy(r0, r0D, G1, cudaMemcpyDeviceToHost) );
     T c0 = (1-p)/N + p*sum(r0, G)/N;
-    pageRankKernelCall(G, B, aD+i, cD, vfromD+i, efromD, c0, n, M, S);
+    pageRankKernelCall(G, B, aD+i, cD, vconvD+i, vfromD+i, efromD, c0, n, E, M, S);
     errorAbsKernel<<<G, B>>>(eD, rD+i, aD+i, n);
     TRY( cudaMemcpy(e, eD, G1, cudaMemcpyDeviceToHost) );
     T e1 = sum(e, G);
@@ -240,19 +256,19 @@ T* pageRankCudaLoop(int G, int B, T* e, T *r0, T *eD, T *r0D, T *aD, T *fD, T *r
 }
 
 template <class T>
-T* pageRankCudaCore(T* e, T *r0, T *eD, T *r0D, T *aD, T *fD, T *rD, T *cD, int *vfromD, int *efromD, int *vdataD, int N, PageRankMode M, T p, T E, int S) {
+T* pageRankCudaCore(T* e, T *r0, T *eD, T *r0D, T *aD, T *fD, T *rD, T *cD, int *vconvD, int *vfromD, int *efromD, int *vdataD, int N, PageRankMode M, T p, T E, int S) {
   int B = BLOCK_DIM;
   int G = min(ceilDiv(N, B), GRID_DIM);
   fillKernel<<<G, B>>>(rD, N, T(1)/N);
   pageRankFactorKernel<<<G, B>>>(fD, vdataD, p, N);
-  return pageRankCudaLoop(G, B, e, r0, eD, r0D, aD, fD, rD, cD, vfromD, efromD, vdataD, N, 0, N, M, p, E, S);
+  return pageRankCudaLoop(G, B, e, r0, eD, r0D, aD, fD, rD, cD, vconvD, vfromD, efromD, vdataD, N, 0, N, M, p, E, S);
 }
 
 
 
 
 template <class T>
-T* pageRankCudaLoopStreamed(int G, int B, cudaStream_t s1, cudaStream_t s2, cudaStream_t s3, T *e, T *r0, T *eD, T *r0D, T *aD, T *fD, T *rD, T *cD, int *vfromD, int *efromD, int *vdataD, int N, int i, PageRankMode M, T p, T E, int S) {
+T* pageRankCudaLoopStreamed(int G, int B, cudaStream_t s1, cudaStream_t s2, cudaStream_t s3, T *e, T *r0, T *eD, T *r0D, T *aD, T *fD, T *rD, T *cD, int *vconvD, int *vfromD, int *efromD, int *vdataD, int N, int i, PageRankMode M, T p, T E, int S) {
   T e0 = T();
   int G1 = G * sizeof(T);
   sumIfNotKernel<<<G, B, 0, s1>>>(r0D,  rD+i, vdataD+i, N);
@@ -262,7 +278,7 @@ T* pageRankCudaLoopStreamed(int G, int B, cudaStream_t s1, cudaStream_t s2, cuda
     TRY( cudaStreamSynchronize(s2) );
     T c0 = (1-p)/N + p*sum(r0, G)/N;
 
-    pageRankKernelCallStreamed(G, B, s1, s2, aD+i, cD, vfromD+i, efromD, c0, N, M, S);
+    pageRankKernelCallStreamed(G, B, s1, s2, aD+i, cD, vconvD+i, vfromD+i, efromD, c0, N, M, S);
     TRY( cudaStreamSynchronize(s1) );
     TRY( cudaStreamSynchronize(s2) );
     swap(aD, rD);
