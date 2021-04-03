@@ -25,8 +25,3 @@ auto verticesBy(G& x, F fm) {
   });
   return a;
 }
-
-
-// template <class G>
-// auto inVertices(G& x) {
-// }

@@ -39,16 +39,27 @@ enum struct PageRankMode {
   SWITCHED
 };
 
+struct PageRankOptimizations {
+  bool components;
+  bool sort;
+  bool identical;
+  bool chain;
+  bool converged;
+};
 
 template <class T>
 struct PageRankOptions {
   typedef PageRankMode Mode;
+  typedef PageRankOptimizations Optimizations;
   Mode mode;
+  Optimizations optimizations;
+
   T damping;
   T convergence;
 
-  PageRankOptions(Mode _mode=Mode::BLOCK, T _damping=0.85, T _convergence=1e-6) {
+  PageRankOptions(Mode _mode=Mode::BLOCK, Optimizations _optimizations={}, T _damping=0.85, T _convergence=1e-6) {
     mode = _mode;
+    optimizations = _optimizations;
     damping = _damping;
     convergence = _convergence;
   }
