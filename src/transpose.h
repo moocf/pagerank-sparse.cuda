@@ -1,4 +1,5 @@
 #pragma once
+#include "DiGraph.h"
 
 
 
@@ -15,6 +16,12 @@ auto& transpose(G& x, H& a) {
   return a;
 }
 
+template <class G>
+auto transpose(G& x) {
+  G a; transpose(x, a);
+  return a;
+}
+
 
 
 
@@ -26,5 +33,13 @@ auto& transposeWithDegree(G& x, H& a) {
     for (auto v : x.edges(u))
       a.addEdge(v, u, x.edgeData(u, v));
   }
+  return a;
+}
+
+template <class G>
+auto transposeWithDegree(G& x) {
+  using K = typename G::TKey;
+  using E = typename G::TEdge;
+  DiGraph<K, int, E> a; transposeWithDegree(x, a);
   return a;
 }
