@@ -32,7 +32,10 @@ void readMtx(string pth, G& a) {
   istringstream ls(ln);
   ls >> r >> c >> sz;
 
-  int u, v;
-  while (bs >> u >> v)
+  while (getline(bs, ln)) {
+    int u, v;
+    ls = istringstream(ln);
+    if (!(ls >> u >> v)) break;
     a.addEdge(u, v);
+  }
 }
