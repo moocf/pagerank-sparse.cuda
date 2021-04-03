@@ -121,19 +121,16 @@ auto& pageRankCore(C& a, C& r, C& f, C& c, G& x, T p, T E) {
 }
 
 
-template <class G, class T>
-auto pageRank(float& t, G& x, T p, T E) {
-  auto a = x.vertexContainer(T());
-  auto r = x.vertexContainer(T());
-  auto f = x.vertexContainer(T());
-  auto c = x.vertexContainer(T());
-  t = measureDuration([&]() { pageRankCore(a, r, f, c, x, p, E); });
+template <class G, class H, class T=float>
+auto pageRank(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
+  auto p = o.damping;
+  auto E = o.convergence;
+  auto a = xt.vertexContainer(T());
+  auto r = xt.vertexContainer(T());
+  auto f = xt.vertexContainer(T());
+  auto c = xt.vertexContainer(T());
+  t = measureDuration([&]() { pageRankCore(a, r, f, c, xt, p, E); });
   return a;
-}
-
-template <class G, class T=float>
-auto pageRank(float& t, G& x, PageRankOptions<T> o=PageRankOptions<T>()) {
-  return pageRank(t, x, o.damping, o.convergence);
 }
 
 
@@ -317,15 +314,18 @@ int pageRankSwitchPoint(G& x, vector<K>& ks, PageRankMode M) {
 }
 
 
-template <class G, class T>
-auto pageRankCuda(float& t, G& x, PageRankMode M, T p, T E) {
+template <class G, class H, class T=float>
+auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
   using K = typename G::TKey;
-  auto ks = pageRankVertices(x, M);
-  auto vfrom = sourceOffsets(x, ks);
-  auto efrom = destinationIndices(x, ks);
-  auto vdata = vertexData(x, ks);  // outDegree
-  int S = pageRankSwitchPoint(x, ks, M);
-  int N = x.order();
+  auto M = o.mode;
+  auto p = o.damping;
+  auto E = o.convergence;
+  auto ks = pageRankVertices(xt, M);
+  auto vfrom = sourceOffsets(xt, ks);
+  auto efrom = destinationIndices(xt, ks);
+  auto vdata = vertexData(xt, ks);  // outDegree
+  int S = pageRankSwitchPoint(xt, ks, M);
+  int N = xt.order();
   int B = BLOCK_DIM;
   int g = min(ceilDiv(N, B), GRID_DIM);
   int VFROM1 = vfrom.size() * sizeof(int);
@@ -378,26 +378,24 @@ auto pageRankCuda(float& t, G& x, PageRankMode M, T p, T E) {
   TRY( cudaStreamDestroy(s2) );
   TRY( cudaStreamDestroy(s3) );
   TRY( cudaProfilerStop() );
-  return vertexContainer(x, a, ks);
-}
-
-template <class G, class T=float>
-auto pageRankCuda(float& t, G& x, PageRankOptions<T> o=PageRankOptions<T>()) {
-  return pageRankCuda(t, x, o.mode, o.damping, o.convergence);
+  return vertexContainer(xt, a, ks);
 }
 
 
 
 
-template <class G, class T>
-auto pageRankCudaStreamed(float& t, G& x, PageRankMode M, T p, T E) {
+template <class G, class H, class T=float>
+auto pageRankCudaStreamed(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
   using K = typename G::TKey;
-  auto ks = pageRankVertices(x, M);
-  auto vfrom = sourceOffsets(x, ks);
-  auto efrom = destinationIndices(x, ks);
-  auto vdata = vertexData(x, ks);  // outDegree
-  int S = pageRankSwitchPoint(x, ks, M);
-  int N = x.order();
+  auto M = o.mode;
+  auto p = o.damping;
+  auto E = o.convergence;
+  auto ks = pageRankVertices(xt, M);
+  auto vfrom = sourceOffsets(xt, ks);
+  auto efrom = destinationIndices(xt, ks);
+  auto vdata = vertexData(xt, ks);  // outDegree
+  int S = pageRankSwitchPoint(xt, ks, M);
+  int N = xt.order();
   int B = BLOCK_DIM;
   int g = min(ceilDiv(N, B), GRID_DIM);
   int VFROM1 = vfrom.size() * sizeof(int);
@@ -451,10 +449,5 @@ auto pageRankCudaStreamed(float& t, G& x, PageRankMode M, T p, T E) {
   TRY( cudaStreamDestroy(s2) );
   TRY( cudaStreamDestroy(s3) );
   TRY( cudaProfilerStop() );
-  return vertexContainer(x, a, ks);
-}
-
-template <class G, class T=float>
-auto pageRankCudaStreamed(float& t, G& x, PageRankOptions<T> o=PageRankOptions<T>()) {
-  return pageRankCudaStreamed(t, x, o.mode, o.damping, o.convergence);
+  return vertexContainer(xt, a, ks);
 }
