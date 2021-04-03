@@ -13,57 +13,71 @@ using std::max;
 
 
 
+// FILL
+// ----
+
 template <class T>
-void fill(T *x, int N, T v) {
+void fill(T *a, int N, T v) {
   for (int i=0; i<N; i++)
-    x[i] = v;
+    a[i] = v;
 }
 
 template <class T>
-void fill(vector<T>& x, T v) {
-  fill(x.begin(), x.end(), v);
+void fill(vector<T>& a, T v) {
+  fill(a.begin(), a.end(), v);
 }
 
 template <class K, class T>
-void fill(unordered_map<K, T>& x, T v) {
-  for (auto& p : x) p.second = v;
+void fill(unordered_map<K, T>& a, T v) {
+  for (auto& p : a) p.second = v;
 }
 
 
-template <class T, class C>
-void fillAt(T *x, C&& is , T v) {
+
+
+// FILL-AT
+// -------
+
+template <class T, class I>
+void fillAt(T *a, I&& is , T v) {
   for (int i : is)
-    x[i] = v;
+    a[i] = v;
 }
 
-template <class T, class C>
-void fillAt(vector<T>& x, C&& is, T v) {
-  fillAt(x.data(), is, v);
+template <class T, class I>
+void fillAt(vector<T>& a, I&& is, T v) {
+  fillAt(a.data(), is, v);
 }
 
-template <class K, class T, class C>
-void fillAt(unordered_map<K, T>& x, C&& ks, T v) {
+template <class K, class T, class I>
+void fillAt(unordered_map<K, T>& a, I&& ks, T v) {
   for (auto&& k : ks)
-    x[k] = v;
+    a[k] = v;
 }
 
 
 
+
+// FILL (OMP)
+// ----------
 
 template <class T>
-void fillOmp(T *x, int N, T v) {
+void fillOmp(T *a, int N, T v) {
   #pragma omp parallel for
   for (int i=0; i<N; i++)
-    x[i] = v;
+    a[i] = v;
 }
 
 template <class T>
-void fillOmp(vector<T>& x, T v) {
-  fillOmp(x.data(), x.size(), v);
+void fillOmp(vector<T>& a, T v) {
+  fillOmp(a.data(), a.size(), v);
 }
 
 
 
+
+// FILL (CUDA)
+// -----------
 
 template <class T>
 __device__ void fillKernelLoop(T *a, int N, T v, int i, int DI) {
@@ -97,6 +111,6 @@ void fillCuda(T *a, int N, T v) {
 }
 
 template <class T>
-void fillCuda(vector<T>& x, T v) {
-  fillCuda(x.data(), x.size(), v);
+void fillCuda(vector<T>& a, T v) {
+  fillCuda(a.data(), a.size(), v);
 }
