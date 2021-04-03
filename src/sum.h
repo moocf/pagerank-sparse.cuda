@@ -1,55 +1,89 @@
 #pragma once
-#include <vector>
 #include <unordered_map>
 #include <algorithm>
-#include <memory>
+#include <cmath>
 #include <omp.h>
 #include "_cuda.h"
 
-using std::vector;
-using std::unique_ptr;
+using std::unordered_map;
 using std::max;
+using std::abs;
 
 
 
+
+// SUM
+// ---
 
 template <class T>
-T sum(T *x, int N) {
+auto sum(T *x, int N) {
   T a = T();
   for (int i=0; i<N; i++)
     a += x[i];
   return a;
 }
 
-template <class T>
-T sum(vector<T>& x) {
+template <class C>
+auto sum(C&& x) {
   return sum(x.data(), x.size());
 }
 
 template <class K, class T>
-T sum(unordered_map<K, T>& x) {
+auto sum(unordered_map<K, T>&& x) {
   T a = T();
-  for (auto& p : x)
+  for (auto&& p : x)
     a += p.second;
   return a;
 }
 
 
-template <class T, class C>
-T sumAt(T *x, C&& is) {
+
+
+// SUM-ABS
+// -------
+
+template <class T>
+auto sumAbs(T *x, int N) {
+  T a = T();
+  for (int i=0; i<N; i++)
+    a += abs(x[i]);
+  return a;
+}
+
+template <class C>
+auto sumAbs(C&& x) {
+  return sumAbs(x.data(), x.size());
+}
+
+template <class K, class T>
+auto sumAbs(unordered_map<K, T>&& x) {
+  T a = T();
+  for (auto&& p : x)
+    a += abs(p.second);
+  return a;
+}
+
+
+
+
+// SUM-AT
+// ------
+
+template <class T, class I>
+auto sumAt(T *x, I&& is) {
   T a = T();
   for (int i : is)
     a += x[i];
   return a;
 }
 
-template <class T, class C>
-T sumAt(vector<T>& x, C&& is) {
+template <class C, class I>
+auto sumAt(C&& x, I&& is) {
   return sumAt(x.data(), is);
 }
 
-template <class K, class T, class C>
-T sumAt(unordered_map<K, T>& x, C&& ks) {
+template <class K, class T, class I>
+auto sumAt(unordered_map<K, T>&& x, I&& ks) {
   T a = T();
   for (auto&& k : ks)
     a += x[k];
@@ -59,8 +93,38 @@ T sumAt(unordered_map<K, T>& x, C&& ks) {
 
 
 
+// SUM-ABS-AT
+// ----------
+
+template <class T, class I>
+auto sumAbsAt(T *x, I&& is) {
+  T a = T();
+  for (int i : is)
+    a += abs(x[i]);
+  return a;
+}
+
+template <class C, class I>
+auto sumAbsAt(C&& x, I&& is) {
+  return sumAbsAt(x.data(), is);
+}
+
+template <class K, class T, class I>
+auto sumAt(unordered_map<K, T>&& x, I&& ks) {
+  T a = T();
+  for (auto&& k : ks)
+    a += abs(x[k]);
+  return a;
+}
+
+
+
+
+// SUM (OMP)
+// ---------
+
 template <class T>
-T sumOmp(T *x, int N) {
+auto sumOmp(T *x, int N) {
   T a = T();
   #pragma omp parallel for reduction (+:a)
   for (int i=0; i<N; i++)
@@ -68,13 +132,16 @@ T sumOmp(T *x, int N) {
   return a;
 }
 
-template <class T>
-T sumOmp(vector<T>& x) {
+template <class C>
+auto sumOmp(C&& x) {
   return sumOmp(x.data(), x.size());
 }
 
 
 
+
+// SUM (CUDA)
+// ----------
 
 template <class T>
 __device__ void sumKernelReduce(T* a, int N, int i) {
@@ -107,12 +174,12 @@ __global__ void sumKernel(T *a, T *x, int N) {
 
 
 template <class T>
-T sumCuda(T *x, int N) {
+auto sumCuda(T *x, int N) {
   int B = BLOCK_DIM;
   int G = min(ceilDiv(N, B), GRID_DIM);
   size_t N1 = N * sizeof(T);
   size_t G1 = G * sizeof(T);
-  unique_ptr<T> a(new T[G1]);
+  T a[GRID_DIM];
 
   T *xD, *aD;
   TRY( cudaMalloc(&xD, N1) );
@@ -120,20 +187,75 @@ T sumCuda(T *x, int N) {
   TRY( cudaMemcpy(xD, x, N1, cudaMemcpyHostToDevice) );
 
   sumKernel<<<G, B>>>(aD, xD, N);
-  TRY( cudaMemcpy(a.get(), aD, G1, cudaMemcpyDeviceToHost) );
+  TRY( cudaMemcpy(a, aD, G1, cudaMemcpyDeviceToHost) );
 
   TRY( cudaFree(xD) );
   TRY( cudaFree(aD) );
-  return sum(a.get(), G);
+  return sum(a, G);
 }
 
-template <class T>
-T sumCuda(vector<T>& x) {
+template <class C>
+auto sumCuda(C&& x) {
   return sumCuda(x.data(), x.size());
 }
 
 
 
+
+// SUM-ABS (CUDA)
+// --------------
+
+template <class T>
+__device__ T sumAbsKernelLoop(T *x, int N, int i, int DI) {
+  T a = T();
+  for (; i<N; i+=DI)
+    a += abs(x[i]);
+  return a;
+}
+
+
+template <class T>
+__global__ void sumAbsKernel(T *a, T *x, int N) {
+  DEFINE(t, b, B, G);
+  __shared__ T cache[BLOCK_DIM];
+
+  cache[t] = sumAbsKernelLoop(x, N, B*b+t, G*B);
+  sumKernelReduce(cache, B, t);
+  if (t == 0) a[b] = cache[0];
+}
+
+
+template <class T>
+auto sumAbsCuda(T *x, int N) {
+  int B = BLOCK_DIM;
+  int G = min(ceilDiv(N, B), GRID_DIM);
+  size_t N1 = N * sizeof(T);
+  size_t G1 = G * sizeof(T);
+  T a[GRID_DIM];
+
+  T *xD, *aD;
+  TRY( cudaMalloc(&xD, N1) );
+  TRY( cudaMalloc(&aD, G1) );
+  TRY( cudaMemcpy(xD, x, N1, cudaMemcpyHostToDevice) );
+
+  sumAbsKernel<<<G, B>>>(aD, xD, N);
+  TRY( cudaMemcpy(a, aD, G1, cudaMemcpyDeviceToHost) );
+
+  TRY( cudaFree(xD) );
+  TRY( cudaFree(aD) );
+  return sum(a, G);
+}
+
+template <class C>
+auto sumAbsCuda(C&& x) {
+  return sumAbsCuda(x.data(), x.size());
+}
+
+
+
+
+// SUM-AT (CUDA)
+// -------------
 
 template <class T>
 __device__ T sumAtKernelLoop(T *x, int *is, int N, int i, int DI) {
@@ -157,6 +279,34 @@ __global__ void sumAtKernel(T *a, T *x, T *is, int N) {
 
 
 
+// SUM-ABS-AT (CUDA)
+// -----------------
+
+template <class T>
+__device__ T sumAbsAtKernelLoop(T *x, int *is, int N, int i, int DI) {
+  T a = T();
+  for (; i<N; i+=DI)
+    a += abs(x[is[i]]);
+  return a;
+}
+
+
+template <class T>
+__global__ void sumAbsAtKernel(T *a, T *x, T *is, int N) {
+  DEFINE(t, b, B, G);
+  __shared__ T cache[BLOCK_DIM];
+
+  cache[t] = sumAbsAtKernelLoop(x, is, N, B*b+t, G*B);
+  sumKernelReduce(cache, B, t);
+  if (t == 0) a[b] = cache[0];
+}
+
+
+
+
+// SUM-IF-NOT (CUDA)
+// -----------------
+
 template <class T, class C>
 __device__ T sumIfNotKernelLoop(T *x, C *cs, int N, int i, int DI) {
   T a = T();
@@ -172,6 +322,31 @@ __global__ void sumIfNotKernel(T *a, T *x, C *cs, int N) {
   __shared__ T cache[BLOCK_DIM];
 
   cache[t] = sumIfNotKernelLoop(x, cs, N, B*b+t, G*B);
+  sumKernelReduce(cache, B, t);
+  if (t == 0) a[b] = cache[0];
+}
+
+
+
+
+// SUM-ABS-IF-NOT (CUDA)
+// ---------------------
+
+template <class T, class C>
+__device__ T sumAbsIfNotKernelLoop(T *x, C *cs, int N, int i, int DI) {
+  T a = T();
+  for (; i<N; i+=DI)
+    if (cs[i] == 0) a += abs(x[i]);
+  return a;
+}
+
+
+template <class T, class C>
+__global__ void sumAbsIfNotKernel(T *a, T *x, C *cs, int N) {
+  DEFINE(t, b, B, G);
+  __shared__ T cache[BLOCK_DIM];
+
+  cache[t] = sumAbsIfNotKernelLoop(x, cs, N, B*b+t, G*B);
   sumKernelReduce(cache, B, t);
   if (t == 0) a[b] = cache[0];
 }

@@ -148,86 +148,86 @@ __global__ void pageRankFactorKernel(T *a, V *vdata, T p, int N) {
 }
 
 
-__device__ bool pageRankDoneKernel(int *vconv, int v) {
-  return vconv && getBit(vconv, v);
+template <class T>
+__device__ bool pageRankDoneKernel(T *a, int v, T E) {
+  return E && a[v] < 0;
 }
 
 template <class T>
-__device__ pageRankSetKernel(T *a, int *vconv, T E, int v, T r) {
-  if (vconv && abs(a[v] - r) < E) setBit(vconv, v);
-  a[v] = r;
+__device__ void pageRankSetKernel(T *a, int v, T E, T r) {
+  a[v]  = abs(a[v] - r) < E? -r : r;
 }
 
 
 template <class T>
-__global__ void pageRankBlockKernel(T *a, T *c, int *vconv, int *vfrom, int *efrom, T c0, int N, T E) {
+__global__ void pageRankBlockKernel(T *a, T *c, int *vfrom, int *efrom, T c0, int N, T E) {
   DEFINE(t, b, B, G);
   __shared__ T cache[BLOCK_DIM];
 
   for (int v=b; v<N; v+=G) {
-    if (pageRankDoneKernel(vconv, v)) continue;
+    if (pageRankDoneKernel(a, E, v)) continue;
     int ebgn = vfrom[v];
     int ideg = vfrom[v+1]-vfrom[v];
     cache[t] = sumAtKernelLoop(c, efrom+ebgn, ideg, t, B);
     sumKernelReduce(cache, B, t);
-    if (t == 0) pageRankSetKernel(a, vconv, E, v, c0 + cache[0]);
+    if (t == 0) pageRankSetKernel(a, E, v, c0 + cache[0]);
   }
 }
 
 
 template <class T>
-__global__ void pageRankThreadKernel(T *a, T *c, int *vconv, int *vfrom, int *efrom, T c0, int N, T E) {
+__global__ void pageRankThreadKernel(T *a, T *c, int *vfrom, int *efrom, T c0, int N, T E) {
   DEFINE(t, b, B, G);
 
   for (int v=B*b+t; v<N; v+=G*B) {
-    if (vconv && getBit(vconv, v)) continue;
+    if (pageRankDoneKernel(a, E, v)) continue;
     int ebgn = vfrom[v];
     int ideg = vfrom[v+1]-vfrom[v];
-    pageRankSetKernel(a, vconv, E, v, c0 + sumAtKernelLoop(c, efrom+ebgn, ideg, 0, 1));
+    pageRankSetKernel(a, E, v, c0 + sumAtKernelLoop(c, efrom+ebgn, ideg, 0, 1));
   }
 }
 
 
 template <class T>
-__global__ void pageRankDynamicKernel(T *a, T *c, int *vconv, int *vfrom, int *efrom, T c0, int N, T E) {
+__global__ void pageRankDynamicKernel(T *a, T *c, int *vfrom, int *efrom, T c0, int N, T E) {
   DEFINE(t, b, B, G);
 
   for (int v=B*b+t; v<N; v+=G*B) {
-    if (vconv && getBit(vconv, v)) continue;
+    if (pageRankDoneKernel(a, E, v)) continue;
     int ebgn = vfrom[v];
     int ideg = vfrom[v+1]-vfrom[v];
-    if (ideg >= B/2) pageRankBlockKernel<<<1, B>>>(&a[v], c, &vfrom[v], efrom, c0, 1);
-    else pageRankSetKernel(a, vconv, E, v, c0 + sumAtKernelLoop(c, efrom+ebgn, ideg, 0, 1));
+    if (ideg >= B/2) pageRankBlockKernel<<<1, B>>>(&a[v], c, &vfrom[v], efrom, c0, 1, E);
+    else pageRankSetKernel(a, E, v, c0 + sumAtKernelLoop(c, efrom+ebgn, ideg, 0, 1));
   }
 }
 
 
 template <class T>
-void pageRankKernelCall(int G, int B, T *a, T *c, int *vconv, int *vfrom, int *efrom, T c0, int N, T E, PageRankMode M, int S) {
+void pageRankKernelCall(int G, int B, T *a, T *c, int *vfrom, int *efrom, T c0, int N, T E, PageRankMode M, int S) {
   typedef PageRankMode Mode;
   switch (M) {
     default:
-    case Mode::BLOCK:   pageRankBlockKernel <<<G, B>>>(a, c, vconv, vfrom, efrom, c0, N, E); break;
-    case Mode::THREAD:  pageRankThreadKernel<<<G, B>>>(a, c, vconv, vfrom, efrom, c0, N, E); break;
-    // case Mode::DYNAMIC: pageRankDynamicKernel<<<G, B>>>(a, c, vconv, vfrom, efrom, c0, N, E); break;
+    case Mode::BLOCK:   pageRankBlockKernel <<<G, B>>>(a, c, vfrom, efrom, c0, N, E); break;
+    case Mode::THREAD:  pageRankThreadKernel<<<G, B>>>(a, c, vfrom, efrom, c0, N, E); break;
+    // case Mode::DYNAMIC: pageRankDynamicKernel<<<G, B>>>(a, c, vfrom, efrom, c0, N, E); break;
     case Mode::SWITCHED:
-      pageRankThreadKernel<<<G, B>>>(a,   c, vconv,   vfrom,   efrom, c0, S,   E);
-      pageRankBlockKernel <<<G, B>>>(a+S, c, vconv+S, vfrom+S, efrom, c0, N-S, E);
+      pageRankThreadKernel<<<G, B>>>(a,   c, vfrom,   efrom, c0, S,   E);
+      pageRankBlockKernel <<<G, B>>>(a+S, c, vfrom+S, efrom, c0, N-S, E);
       break;
   }
 }
 
 template <class T>
-void pageRankKernelCallStreamed(int G, int B, cudaStream_t s1, cudaStream_t s2, T *a, T *c, int *vconv, int *vfrom, int *efrom, T c0, int N, T E, PageRankMode M, int S) {
+void pageRankKernelCallStreamed(int G, int B, cudaStream_t s1, cudaStream_t s2, T *a, T *c, int *vfrom, int *efrom, T c0, int N, T E, PageRankMode M, int S) {
   typedef PageRankMode Mode;
   switch (M) {
     default:
-    case Mode::BLOCK:   pageRankBlockKernel <<<G, B, 0, s1>>>(a, c, vconv, vfrom, efrom, c0, N, E); break;
-    case Mode::THREAD:  pageRankThreadKernel<<<G, B, 0, s1>>>(a, c, vconv, vfrom, efrom, c0, N, E); break;
-    // case Mode::DYNAMIC: pageRankDynamicKernel<<<G, B, 0, s1>>>(a, c, vconv, vfrom, efrom, c0, N, E); break;
+    case Mode::BLOCK:   pageRankBlockKernel <<<G, B, 0, s1>>>(a, c, vfrom, efrom, c0, N, E); break;
+    case Mode::THREAD:  pageRankThreadKernel<<<G, B, 0, s1>>>(a, c, vfrom, efrom, c0, N, E); break;
+    // case Mode::DYNAMIC: pageRankDynamicKernel<<<G, B, 0, s1>>>(a, c, vfrom, efrom, c0, N, E); break;
     case Mode::SWITCHED:
-      pageRankThreadKernel<<<G, B, 0, s1>>>(a,   c, vconv,   vfrom,   efrom, c0, S,   E);
-      pageRankBlockKernel <<<G, B, 0, s2>>>(a+S, c, vconv+S, vfrom+S, efrom, c0, N-S, E);
+      pageRankThreadKernel<<<G, B, 0, s1>>>(a,   c, vfrom,   efrom, c0, S,   E);
+      pageRankBlockKernel <<<G, B, 0, s2>>>(a+S, c, vfrom+S, efrom, c0, N-S, E);
       break;
   }
 }
@@ -236,7 +236,7 @@ void pageRankKernelCallStreamed(int G, int B, cudaStream_t s1, cudaStream_t s2, 
 
 
 template <class T>
-T* pageRankCudaLoop(int G, int B, T* e, T *r0, T *eD, T *r0D, T *aD, T *fD, T *rD, T *cD, int *vconvD, int *vfromD, int *efromD, int *vdataD, int N, int i, int n, PageRankMode M, T p, T E, int S) {
+T* pageRankCudaLoop(int G, int B, T* e, T *r0, T *eD, T *r0D, T *aD, T *fD, T *rD, T *cD, int *vfromD, int *efromD, int *vdataD, int N, int i, int n, PageRankMode M, T p, T E, int S, bool OD) {
   T e0 = T();
   int G1 = G * sizeof(T);
   while (1) {
