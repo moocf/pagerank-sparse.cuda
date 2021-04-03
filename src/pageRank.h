@@ -58,8 +58,8 @@ struct PageRankOptions {
 
 
 // Finds rank of nodes in graph.
-template <class G, class V, class T>
-void pageRankPushStep(V& a, V& r, G& x, T p) {
+template <class G, class C, class T>
+void pageRankPushStep(C& a, C& r, G& x, T p) {
   int N = x.order();
   fill(a, (1-p)/N);
   for (int u : x.vertices()) {
@@ -70,17 +70,17 @@ void pageRankPushStep(V& a, V& r, G& x, T p) {
 }
 
 
-template <class G, class V, class T>
-auto& pageRankPushCore(V& a, V& r, G& x, T p, T E) {
+template <class G, class C, class T>
+auto& pageRankPushCore(C& a, C& r, G& x, T p, T E) {
   T e0 = T();
   int N = x.order();
   fill(r, T(1)/N);
   while (1) {
     pageRankPushStep(a, r, x, p);
-    T e = errorAbs(a, r);
-    if (e < E || e == e0) break;
+    T e1 = errorAbs(a, r);
+    if (e1 < E || e1 == e0) break;
     swap(a, r);
-    e0 = e;
+    e0 = e1;
   }
   fillAt(a, x.nonVertices(), T());
   return a;
