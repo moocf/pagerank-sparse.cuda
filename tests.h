@@ -430,6 +430,124 @@ const char* testSort() {
 }
 
 
+const char* testPageRank() {
+  typedef PageRankMode Mode;
+  vector<float> a {0,
+    0.045040868326612485,
+    0.05703473807762061,
+    0.030930433092920914,
+    0.04298976368298876,
+    0.24661630251804945,
+    0.1235621720870247,
+    0.22523400274373884,
+    0.22859171947104429
+  };
+  vector<float> b {0,
+    0.09950567284608347,
+    0.12769835091442033,
+    0.4088563412945265,
+    0.12769835091442033,
+    0.2362412840305493
+  };
+  vector<float> c {0,
+    0.012119784428754443, 0.010576796064342956,
+    0.019567072719044492, 0.01612080000141513,
+    0.011710417143267388, 0.07839244609203286,
+    0.07377618658154286,  0.06985312541028553,
+    0.04237448488634947,  0.0381820598964617,
+    0.03959764267900844,  0.01836220312872412,
+    0.03114307555495728,  0.09030497097372668,
+    0.08390010864031147,  0.0428002866707024,
+    0.044663939075725474, 0.04510756201371743,
+    0.04548387516760983,  0.0881253137439066,
+    0.09783784912811343
+  };
+  vector<float> d {0,
+    0.02017396061154734,  0.016468670102029986,
+    0.016468670102029986, 0.028892291222176396,
+    0.023243825168349837, 0.02765198823523682,
+    0.01964683184211511,  0.043668184004720674,
+    0.0567647882467902,   0.016967005532428924,
+    0.0320197718474144,   0.09566851162184489,
+    0.04855385428187146,  0.09343984852659853,
+    0.02853012491159028,  0.13609421793617826,
+    0.08986160238623807,  0.06573656738092894,
+    0.1401492860399099
+  };
+  vector<float> e {0,
+    0.05170616341518244,
+    0.07368172600710296,
+    0.0574140637880373,
+    0.3487008310282128,
+    0.19990313374680874,
+    0.2685940820146559
+  };
+  auto& g = MIN2C;
+  auto& h = MIN2D;
+  auto& i = MIN4C;
+  auto& j = MIN5C;
+  auto& k = MINNV;
+  auto gt = transposeWithDegree(g);
+  auto ht = transposeWithDegree(h);
+  auto it = transposeWithDegree(i);
+  auto jt = transposeWithDegree(j);
+  auto kt = transposeWithDegree(k);
+  float t, E = 1e-5;
+
+  auto p1 = pageRankPush(t, g);
+  auto p2 = pageRank(t, gt);
+  auto p3 = pageRankCuda(t, gt, {Mode::BLOCK});
+  auto p4 = pageRankCuda(t, gt, {Mode::THREAD});
+  auto p5 = pageRankCuda(t, gt, {Mode::SWITCHED});
+  auto q1 = pageRankPush(t, h);
+  auto q2 = pageRank(t, ht);
+  auto q3 = pageRankCuda(t, ht, {Mode::BLOCK});
+  auto q4 = pageRankCuda(t, ht, {Mode::THREAD});
+  auto q5 = pageRankCuda(t, ht, {Mode::SWITCHED});
+  auto r1 = pageRankPush(t, i);
+  auto r2 = pageRank(t, it);
+  auto r3 = pageRankCuda(t, it, {Mode::BLOCK});
+  auto r4 = pageRankCuda(t, it, {Mode::THREAD});
+  auto r5 = pageRankCuda(t, it, {Mode::SWITCHED});
+  auto s1 = pageRankPush(t, j);
+  auto s2 = pageRank(t, jt);
+  auto s3 = pageRankCuda(t, jt, {Mode::BLOCK});
+  auto s4 = pageRankCuda(t, jt, {Mode::THREAD});
+  auto s5 = pageRankCuda(t, jt, {Mode::SWITCHED});
+  auto t1 = pageRankPush(t, k);
+  auto t2 = pageRank(t, kt);
+  auto t3 = pageRankCuda(t, kt, {Mode::BLOCK});
+  auto t4 = pageRankCuda(t, kt, {Mode::THREAD});
+  auto t5 = pageRankCuda(t, kt, {Mode::SWITCHED});
+  if (errorAbs(a, p1) >= E) return "pageRankPushMin2c";
+  if (errorAbs(a, p2) >= E) return "pageRankMin2c";
+  if (errorAbs(a, p3) >= E) return "pageRankCudaMin2c {block}";
+  if (errorAbs(a, p4) >= E) return "pageRankCudaMin2c {thread}";
+  if (errorAbs(a, p5) >= E) return "pageRankCudaMin2c {switched}";
+  if (errorAbs(b, q1) >= E) return "pageRankPushMin2d";
+  if (errorAbs(b, q2) >= E) return "pageRankMin2d";
+  if (errorAbs(b, q3) >= E) return "pageRankCudaMin2d {block}";
+  if (errorAbs(b, q4) >= E) return "pageRankCudaMin2d {thread}";
+  if (errorAbs(b, q5) >= E) return "pageRankCudaMin2d {switched}";
+  if (errorAbs(c, r1) >= E) return "pageRankPushMin4c";
+  if (errorAbs(c, r2) >= E) return "pageRankMin4c";
+  if (errorAbs(c, r3) >= E) return "pageRankCudaMin4c {block}";
+  if (errorAbs(c, r4) >= E) return "pageRankCudaMin4c {thread}";
+  if (errorAbs(c, r5) >= E) return "pageRankCudaMin4c {switched}";
+  if (errorAbs(d, s1) >= E) return "pageRankPushMin5c";
+  if (errorAbs(d, s2) >= E) return "pageRankMin5c";
+  if (errorAbs(d, s3) >= E) return "pageRankCudaMin5c {block}";
+  if (errorAbs(d, s4) >= E) return "pageRankCudaMin5c {thread}";
+  if (errorAbs(d, s5) >= E) return "pageRankCudaMin5c {switched}";
+  if (errorAbs(e, t1) >= E) return "pageRankPushMinNv";
+  if (errorAbs(e, t2) >= E) return "pageRankMinNv";
+  if (errorAbs(e, t3) >= E) return "pageRankCudaMinNv {block}";
+  if (errorAbs(e, t4) >= E) return "pageRankCudaMinNv {thread}";
+  if (errorAbs(e, t5) >= E) return "pageRankCudaMinNv {switched}";
+  return NULL;
+}
+
+
 void testAll() {
   vector<const char*> ts = {
     testCeilDiv(),
@@ -450,7 +568,8 @@ void testAll() {
     testTranspose(),
     testDfs(),
     testComponents(),
-    testSort()
+    testSort(),
+    testPageRank()
   };
   int n = 0;
   for (auto& t : ts) {
