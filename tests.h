@@ -3,6 +3,7 @@
 #include <unordered_map>
 #include <stdio.h>
 #include "src/main.h"
+#include "setups.h"
 
 using namespace std;
 
@@ -342,11 +343,6 @@ const char* testCopy() {
     h.hasEdge(2, 4) &&
     h.hasEdge(4, 3) &&
     h.hasEdge(3, 1)
-  //  g.vertexKeys()         == h.vertexKeys() &&
-  //  g.vertexData()         == h.vertexData() &&
-  //  g.edgeData()           == h.edgeData()   &&
-  //  g.sourceOffsets()      == h.sourceOffsets() &&
-  //  g.destinationIndices() == h.destinationIndices()
   )) return "copy";
   return NULL;
 }
@@ -374,43 +370,12 @@ const char* testTranspose() {
 
 
 const char* testDfs() {
-  DiGraph<> g;
-  DiGraph<> h;
-  DiGraph<> i;
   vector<int> a {1, 2, 4, 3, 5, 6, 8, 7};
   vector<int> b {1, 2, 3, 4, 5};
   vector<int> c {1, 2, 3, 5, 4, 6};
-
-  g.addEdge(1, 2);
-  g.addEdge(2, 4);
-  g.addEdge(4, 3);
-  g.addEdge(3, 1);
-  g.addEdge(2, 5);
-  g.addEdge(4, 5);
-  g.addEdge(4, 7);
-  g.addEdge(5, 6);
-  g.addEdge(6, 8);
-  g.addEdge(8, 7);
-  g.addEdge(7, 5);
-  g.addEdge(5, 8);
-
-  h.addEdge(1, 2);
-  h.addEdge(1, 4);
-  h.addEdge(1, 5);
-  h.addEdge(2, 3);
-  h.addEdge(4, 5);
-  h.addEdge(5, 3);
-
-  i.addEdge(1, 2);
-  i.addEdge(1, 3);
-  i.addEdge(3, 1);
-  i.addEdge(3, 2);
-  i.addEdge(3, 5);
-  i.addEdge(4, 5);
-  i.addEdge(4, 6);
-  i.addEdge(5, 4);
-  i.addEdge(5, 6);
-  i.addEdge(6, 4);
+  auto& g = MIN2C;
+  auto& h = MIN2D;
+  auto& i = MINNV;
 
   auto p = dfs(g, 1);
   auto q = dfs(h, 1);
