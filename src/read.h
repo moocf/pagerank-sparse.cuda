@@ -14,7 +14,7 @@ using std::getline;
 
 
 template <class G>
-void readMtx(string& pth, G& a) {
+void readMtx(const char *pth, G& a) {
   ifstream f(pth);
   string b, ln;
 
@@ -41,7 +41,7 @@ void readMtx(string& pth, G& a) {
   }
 }
 
-auto readMtx(string& pth) {
+auto readMtx(const char *pth) {
   DiGraph<> a; readMtx(pth, a);
   return a;
 }

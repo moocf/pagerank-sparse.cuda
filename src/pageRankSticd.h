@@ -65,7 +65,7 @@ T* pageRankSticdCudaStep(int G, int B, T *e, T *r0, T *eD, T *r0D, T *aD, T *fD,
 
 template <class T>
 T* pageRankSticdCudaLoop(int G, int B, T *e, T *r0, T *eD, T *r0D, T *aD, T *fD, T *rD, T *cD, int *vfromD, int *efromD, int *vdataD, int N, vector<int>& CS, PageRankMode M, T p, T E, int S) {
-  T e0 = 0;
+  // T e0 = 0;
   int G1 = G * sizeof(T);
   for (int z=0; z<25; z++) {
     T *bD = pageRankSticdCudaStep(G, B, e, r0, eD, r0D, aD, fD, rD, cD, vfromD, efromD, vdataD, N, CS, M, p, E, S);
@@ -75,7 +75,7 @@ T* pageRankSticdCudaLoop(int G, int B, T *e, T *r0, T *eD, T *r0D, T *aD, T *fD,
     T e1 = sum(e, G);
     printf("e1: %.23f, E: %.23f\n", e1, E);
     // if (e1 < E || e1 == e0) break;
-    e0 = e1;
+    // e0 = e1;
   }
   return rD;
 }
