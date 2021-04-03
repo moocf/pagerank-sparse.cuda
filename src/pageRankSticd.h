@@ -70,7 +70,7 @@ T* pageRankSticdCudaLoop(int G, int B, T *e, T *r0, T *eD, T *r0D, T *aD, T *fD,
   for (int z=0; z<25; z++) {
     T *bD = pageRankSticdCudaStep(G, B, e, r0, eD, r0D, aD, fD, rD, cD, vfromD, efromD, vdataD, N, CS, M, p, E, S);
     if (bD != rD) swap(aD, rD);
-    errorAbsKernel<<<G, B>>>(eD, rD, aD, N);
+    absErrorKernel<<<G, B>>>(eD, rD, aD, N);
     TRY( cudaMemcpy(e, eD, G1, cudaMemcpyDeviceToHost) );
     T e1 = sum(e, G);
     // printf("e1: %.23f, E: %.23f\n", e1, E);

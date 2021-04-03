@@ -1,6 +1,4 @@
 #pragma once
-#include "measureDuration.h"
-#include <stdio.h>
 
 
 

@@ -1,6 +1,12 @@
 #pragma once
+#include <algorithm>
+#include "add.h"
+#include "fill.h"
+#include "error.h"
+#include "measure.h"
 #include "pageRank.h"
 
+using std::swap;
 
 
 
@@ -11,8 +17,8 @@ void pageRankPushStep(C& a, C& r, G& x, T p) {
   fill(a, (1-p)/N);
   for (int u : x.vertices()) {
     int d = x.degree(u);
-    if (d > 0) addAt(a, x.edges(u), p*r[u]/d);
-    else add(a, p*r[u]/N);
+    if (d > 0) addValueAt(a, x.edges(u), p*r[u]/d);
+    else addValue(a, p*r[u]/N);
   }
 }
 
@@ -24,7 +30,7 @@ auto& pageRankPushCore(C& a, C& r, G& x, T p, T E) {
   fill(r, T(1)/N);
   while (1) {
     pageRankPushStep(a, r, x, p);
-    T e1 = errorAbs(a, r);
+    T e1 = absError(a, r);
     if (e1 < E || e1 == e0) break;
     swap(a, r);
     e0 = e1;

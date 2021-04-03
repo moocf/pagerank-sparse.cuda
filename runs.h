@@ -13,14 +13,14 @@ void runAdd() {
   for (int i=0; i<N; i++) is1[i] = i;
   auto is2 = range(N);
   auto is3 = filter(is2, [&](int i) { return true; });
-  t = measureDuration([&]() { add(x, N, 1.0f); });
-  printf("[%07.1f ms] add(x, N, v)\n", t);
-  t = measureDuration([&]() { addAt(x, is1, 1.0f); });
-  printf("[%07.1f ms] addAt(x, <vector> is, v)\n", t);
-  t = measureDuration([&]() { addAt(x, is2, 1.0f); });
-  printf("[%07.1f ms] addAt(x, <range>  is, v)\n", t);
-  t = measureDuration([&]() { addAt(x, is3, 1.0f); });
-  printf("[%07.1f ms] addAt(x, <filter> is, v)\n", t);
+  t = measureDuration([&]() { addValue(x, N, 1.0f); });
+  printf("[%07.1f ms] addValue(x, N, v)\n", t);
+  t = measureDuration([&]() { addValueAt(x, is1, 1.0f); });
+  printf("[%07.1f ms] addValueAt(x, <vector> is, v)\n", t);
+  t = measureDuration([&]() { addValueAt(x, is2, 1.0f); });
+  printf("[%07.1f ms] addValueAt(x, <range>  is, v)\n", t);
+  t = measureDuration([&]() { addValueAt(x, is3, 1.0f); });
+  printf("[%07.1f ms] addValueAt(x, <filter> is, v)\n", t);
 }
 
 
@@ -51,18 +51,18 @@ void runSum() {
 }
 
 
-void runErrorAbs() {
+void runAbsError() {
   int N = 64*1024*1024;
   float *x = new float[N];
   float *y = new float[N], t;
   fill(x, N, 1.0f);
   fill(y, N, 2.0f);
-  t = measureDuration([&]() { errorAbs(x, y, N); });
-  printf("[%07.1f ms] errorAbs\n", t);
-  t = measureDuration([&]() { errorAbsOmp(x, y, N); });
-  printf("[%07.1f ms] errorAbsOmp\n", t);
-  t = measureDuration([&]() { errorAbsCuda(x, y, N); });
-  printf("[%07.1f ms] errorAbsCuda\n", t);
+  t = measureDuration([&]() { absError(x, y, N); });
+  printf("[%07.1f ms] absError\n", t);
+  t = measureDuration([&]() { absErrorOmp(x, y, N); });
+  printf("[%07.1f ms] absErrorOmp\n", t);
+  t = measureDuration([&]() { absErrorCuda(x, y, N); });
+  printf("[%07.1f ms] absErrorCuda\n", t);
   delete[] x;
   delete[] y;
 }

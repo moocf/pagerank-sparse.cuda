@@ -200,12 +200,12 @@ const char* testAdd() {
   vector<int> is {0, 2};
   vector<char> ks {'a', 'c'};
 
-  add(a, 1);
-  addOmp(b, 1);
-  addCuda(c, 1);
-  add(m, 1);
-  addAt(d, is, 1);
-  addAt(n, ks, 1);
+  addValue(a, 1);
+  addValueOmp(b, 1);
+  addValueCuda(c, 1);
+  addValue(m, 1);
+  addValueAt(d, is, 1);
+  addValueAt(n, ks, 1);
   if (!(a[0]==2 && a[1]==3 && a[2]==4 && a[3]==5)) return "addV";
   if (!(b[0]==2 && b[1]==3 && b[2]==4 && b[3]==5)) return "addOmpV";
   if (!(c[0]==2 && c[1]==3 && c[2]==4 && c[3]==5)) return "addCudaV";
@@ -250,18 +250,18 @@ const char* testDotProduct() {
 }
 
 
-const char* testErrorAbs() {
+const char* testAbsError() {
   vector<int> x {1, 2, 3, 4};
   vector<int> y {1, 1, 3, 5};
   unordered_map<char, int> m {{'a', 1}, {'b', 2}, {'c', 3}};
   unordered_map<char, int> n {{'a', 1}, {'b', 1}, {'c', 4}};
 
-  int a = errorAbs(x, y);
-  int b = errorAbsCuda(x, y);
-  int c = errorAbs(m, n);
-  if (a != 2) return "errorAbsV";
-  if (b != 2) return "errorAbsCudaV";
-  if (c != 2) return "errorAbsM";
+  int a = absError(x, y);
+  int b = absErrorCuda(x, y);
+  int c = absError(m, n);
+  if (a != 2) return "absErrorV";
+  if (b != 2) return "absErrorCudaV";
+  if (c != 2) return "absErrorM";
   return NULL;
 }
 
@@ -519,31 +519,31 @@ const char* testPageRank() {
   auto t3 = pageRankCuda(t, k, kt, {Mode::BLOCK});
   auto t4 = pageRankCuda(t, k, kt, {Mode::THREAD});
   auto t5 = pageRankCuda(t, k, kt, {Mode::SWITCHED});
-  if (errorAbs(a, p1) >= E) return "pageRankPushMin2c";
-  if (errorAbs(a, p2) >= E) return "pageRankMin2c";
-  if (errorAbs(a, p3) >= E) return "pageRankCudaMin2c {block}";
-  if (errorAbs(a, p4) >= E) return "pageRankCudaMin2c {thread}";
-  if (errorAbs(a, p5) >= E) return "pageRankCudaMin2c {switched}";
-  if (errorAbs(b, q1) >= E) return "pageRankPushMin2d";
-  if (errorAbs(b, q2) >= E) return "pageRankMin2d";
-  if (errorAbs(b, q3) >= E) return "pageRankCudaMin2d {block}";
-  if (errorAbs(b, q4) >= E) return "pageRankCudaMin2d {thread}";
-  if (errorAbs(b, q5) >= E) return "pageRankCudaMin2d {switched}";
-  if (errorAbs(c, r1) >= E) return "pageRankPushMin4c";
-  if (errorAbs(c, r2) >= E) return "pageRankMin4c";
-  if (errorAbs(c, r3) >= E) return "pageRankCudaMin4c {block}";
-  if (errorAbs(c, r4) >= E) return "pageRankCudaMin4c {thread}";
-  if (errorAbs(c, r5) >= E) return "pageRankCudaMin4c {switched}";
-  if (errorAbs(d, s1) >= E) return "pageRankPushMin5c";
-  if (errorAbs(d, s2) >= E) return "pageRankMin5c";
-  if (errorAbs(d, s3) >= E) return "pageRankCudaMin5c {block}";
-  if (errorAbs(d, s4) >= E) return "pageRankCudaMin5c {thread}";
-  if (errorAbs(d, s5) >= E) return "pageRankCudaMin5c {switched}";
-  if (errorAbs(e, t1) >= E) return "pageRankPushMinNv";
-  if (errorAbs(e, t2) >= E) return "pageRankMinNv";
-  if (errorAbs(e, t3) >= E) return "pageRankCudaMinNv {block}";
-  if (errorAbs(e, t4) >= E) return "pageRankCudaMinNv {thread}";
-  if (errorAbs(e, t5) >= E) return "pageRankCudaMinNv {switched}";
+  if (absError(a, p1) >= E) return "pageRankPushMin2c";
+  if (absError(a, p2) >= E) return "pageRankMin2c";
+  if (absError(a, p3) >= E) return "pageRankCudaMin2c {block}";
+  if (absError(a, p4) >= E) return "pageRankCudaMin2c {thread}";
+  if (absError(a, p5) >= E) return "pageRankCudaMin2c {switched}";
+  if (absError(b, q1) >= E) return "pageRankPushMin2d";
+  if (absError(b, q2) >= E) return "pageRankMin2d";
+  if (absError(b, q3) >= E) return "pageRankCudaMin2d {block}";
+  if (absError(b, q4) >= E) return "pageRankCudaMin2d {thread}";
+  if (absError(b, q5) >= E) return "pageRankCudaMin2d {switched}";
+  if (absError(c, r1) >= E) return "pageRankPushMin4c";
+  if (absError(c, r2) >= E) return "pageRankMin4c";
+  if (absError(c, r3) >= E) return "pageRankCudaMin4c {block}";
+  if (absError(c, r4) >= E) return "pageRankCudaMin4c {thread}";
+  if (absError(c, r5) >= E) return "pageRankCudaMin4c {switched}";
+  if (absError(d, s1) >= E) return "pageRankPushMin5c";
+  if (absError(d, s2) >= E) return "pageRankMin5c";
+  if (absError(d, s3) >= E) return "pageRankCudaMin5c {block}";
+  if (absError(d, s4) >= E) return "pageRankCudaMin5c {thread}";
+  if (absError(d, s5) >= E) return "pageRankCudaMin5c {switched}";
+  if (absError(e, t1) >= E) return "pageRankPushMinNv";
+  if (absError(e, t2) >= E) return "pageRankMinNv";
+  if (absError(e, t3) >= E) return "pageRankCudaMinNv {block}";
+  if (absError(e, t4) >= E) return "pageRankCudaMinNv {thread}";
+  if (absError(e, t5) >= E) return "pageRankCudaMinNv {switched}";
   return NULL;
 }
 
@@ -562,7 +562,7 @@ void testAll() {
     testAdd(),
     testSum(),
     testDotProduct(),
-    testErrorAbs(),
+    testAbsError(),
     testDiGraph(),
     testCopy(),
     testTranspose(),

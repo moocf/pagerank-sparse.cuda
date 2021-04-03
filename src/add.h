@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 #include <unordered_map>
 #include <algorithm>
 #include <cmath>
@@ -22,8 +23,8 @@ void addValue(T *a, int N, T v) {
     a[i] += v;
 }
 
-template <class C, class T>
-void addValue(C& a, T v) {
+template <class T>
+void addValue(vector<T>& a, T v) {
   addValue(a.data(), a.size(), v);
 }
 
@@ -39,18 +40,18 @@ void addValue(unordered_map<K, T>& a, T v) {
 // ADD-VALUE-AT
 // ------------
 
-template <class I, class T>
+template <class T, class I>
 void addValueAt(T *a, I&& is , T v) {
   for (int i : is)
     a[i] += v;
 }
 
-template <class C, class I, class T>
-void addValueAt(C& a, I&& is, T v) {
+template <class T, class I>
+void addValueAt(vector<T>& a, I&& is, T v) {
   addValueAt(a.data(), is, v);
 }
 
-template <class K, class I, class T>
+template <class K, class T, class I>
 void addValueAt(unordered_map<K, T>& a, I&& ks, T v) {
   for (auto&& k : ks)
     a[k] += v;
@@ -68,13 +69,13 @@ void add(T *a, T *x, T *y, int N) {
     a[i] = x[i] + y[i];
 }
 
-template <class C, class T>
-void add(C& a, C&& x, C&& y) {
+template <class T>
+void add(vector<T>& a, vector<T>& x, vector<T>& y) {
   return add(a.data(), x.data(), y.data(), x.size());
 }
 
 template <class K, class T>
-void add(unordered_map<K, T>& a, unordered_map<K, T>&& x, unordered_map<K, T>&& y) {
+void add(unordered_map<K, T>& a, unordered_map<K, T>& x, unordered_map<K, T>& y) {
   for (auto&& p : x)
     a[p.first] = x[p.first] + y[p.first];
 }
@@ -91,13 +92,13 @@ void addAbs(T *a, T *x, T *y, int N) {
     a[i] = abs(x[i] + y[i]);
 }
 
-template <class C, class T>
-void addAbs(C& a, C&& x, C&& y) {
+template <class T>
+void addAbs(vector<T>& a, vector<T>& x, vector<T>& y) {
   return addAbs(a.data(), x.data(), y.data(), x.size());
 }
 
 template <class K, class T>
-void addAbs(unordered_map<K, T>& a, unordered_map<K, T>&& x, unordered_map<K, T>&& y) {
+void addAbs(unordered_map<K, T>& a, unordered_map<K, T>& x, unordered_map<K, T>& y) {
   for (auto&& p : x)
     a[p.first] = abs(x[p.first] + y[p.first]);
 }
@@ -115,8 +116,8 @@ void addValueOmp(T *a, int N, T v) {
     a[i] += v;
 }
 
-template <class C, class T>
-void addValueOmp(C& a, T v) {
+template <class T>
+void addValueOmp(vector<T>& a, T v) {
   addValueOmp(a.data(), a.size(), v);
 }
 
@@ -157,8 +158,8 @@ void addValueCuda(T *a, int N, T v) {
   TRY( cudaFree(aD) );
 }
 
-template <class C, class T>
-void addValueCuda(C& a, T v) {
+template <class T>
+void addValueCuda(vector<T>& a, T v) {
   addValueCuda(a.data(), a.size(), v);
 }
 
@@ -202,8 +203,8 @@ void addCuda(T *a, T *x, T *y, int N) {
   TRY( cudaFree(yD) );
 }
 
-template <class C, class T>
-void addCuda(C& a, C&& x, C&& y) {
+template <class T>
+void addCuda(vector<T>& a, vector<T>& x, vector<T>& y) {
   addCuda(a.data(), x.data(), y.data(), x.size());
 }
 
@@ -247,7 +248,7 @@ void addAbsCuda(T *a, T *x, T *y, int N) {
   TRY( cudaFree(yD) );
 }
 
-template <class C, class T>
-void addAbsCuda(C& a, C&& x, C&& y) {
+template <class T>
+void addAbsCuda(vector<T>& a, vector<T>& x, vector<T>& y) {
   addAbsCuda(a.data(), x.data(), y.data(), x.size());
 }

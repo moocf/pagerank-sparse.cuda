@@ -9,14 +9,13 @@
 #include "_cuda.h"
 #include "DiGraph.h"
 #include "ceilDiv.h"
-#include "measureDuration.h"
+#include "measure.h"
 #include "count.h"
-#include "bit.h"
 #include "add.h"
 #include "sum.h"
 #include "fill.h"
 #include "multiply.h"
-#include "errorAbs.h"
+#include "error.h"
 #include "vertices.h"
 #include "sourceOffsets.h"
 #include "destinationIndices.h"
@@ -104,7 +103,7 @@ auto& pageRankLoop(C& a, C& r, C& f, C& c, G& x, T p, T E) {
     T c0 = pageRankTeleport(r, x, p, N);
     multiply(c, r, f);
     pageRankStep(a, c, x, c0);
-    T e1 = errorAbs(a, r);
+    T e1 = absError(a, r);
     if (e1 < E || e1 == e0) break;
     swap(a, r);
     e0 = e1;

@@ -1,10 +1,12 @@
 #pragma once
+#include <vector>
 #include <unordered_map>
 #include <algorithm>
 #include <cmath>
 #include <omp.h>
 #include "_cuda.h"
 
+using std::vector;
 using std::unordered_map;
 using std::max;
 using std::abs;
@@ -23,13 +25,13 @@ auto sum(T *x, int N) {
   return a;
 }
 
-template <class C>
-auto sum(C&& x) {
+template <class T>
+auto sum(vector<T>& x) {
   return sum(x.data(), x.size());
 }
 
 template <class K, class T>
-auto sum(unordered_map<K, T>&& x) {
+auto sum(unordered_map<K, T>& x) {
   T a = T();
   for (auto&& p : x)
     a += p.second;
@@ -50,13 +52,13 @@ auto sumAbs(T *x, int N) {
   return a;
 }
 
-template <class C>
-auto sumAbs(C&& x) {
+template <class T>
+auto sumAbs(vector<T>& x) {
   return sumAbs(x.data(), x.size());
 }
 
 template <class K, class T>
-auto sumAbs(unordered_map<K, T>&& x) {
+auto sumAbs(unordered_map<K, T>& x) {
   T a = T();
   for (auto&& p : x)
     a += abs(p.second);
@@ -77,13 +79,13 @@ auto sumAt(T *x, I&& is) {
   return a;
 }
 
-template <class C, class I>
-auto sumAt(C&& x, I&& is) {
+template <class T, class I>
+auto sumAt(vector<T>& x, I&& is) {
   return sumAt(x.data(), is);
 }
 
 template <class K, class T, class I>
-auto sumAt(unordered_map<K, T>&& x, I&& ks) {
+auto sumAt(unordered_map<K, T>& x, I&& ks) {
   T a = T();
   for (auto&& k : ks)
     a += x[k];
@@ -104,13 +106,13 @@ auto sumAbsAt(T *x, I&& is) {
   return a;
 }
 
-template <class C, class I>
-auto sumAbsAt(C&& x, I&& is) {
+template <class T, class I>
+auto sumAbsAt(vector<T>& x, I&& is) {
   return sumAbsAt(x.data(), is);
 }
 
 template <class K, class T, class I>
-auto sumAt(unordered_map<K, T>&& x, I&& ks) {
+auto sumAbsAt(unordered_map<K, T>& x, I&& ks) {
   T a = T();
   for (auto&& k : ks)
     a += abs(x[k]);
@@ -132,8 +134,8 @@ auto sumOmp(T *x, int N) {
   return a;
 }
 
-template <class C>
-auto sumOmp(C&& x) {
+template <class T>
+auto sumOmp(vector<T>& x) {
   return sumOmp(x.data(), x.size());
 }
 
@@ -194,8 +196,8 @@ auto sumCuda(T *x, int N) {
   return sum(a, G);
 }
 
-template <class C>
-auto sumCuda(C&& x) {
+template <class T>
+auto sumCuda(vector<T>& x) {
   return sumCuda(x.data(), x.size());
 }
 
@@ -246,8 +248,8 @@ auto sumAbsCuda(T *x, int N) {
   return sum(a, G);
 }
 
-template <class C>
-auto sumAbsCuda(C&& x) {
+template <class T>
+auto sumAbsCuda(vector<T>& x) {
   return sumAbsCuda(x.data(), x.size());
 }
 

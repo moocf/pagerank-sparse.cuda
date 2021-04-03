@@ -23,7 +23,7 @@ auto dotProduct(T *x, T *y, int N) {
 }
 
 template <class C>
-auto dotProduct(C&& x, C&& y) {
+auto dotProduct(C& x, C& y) {
   return dotProduct(x.data(), y.data(), x.size());
 }
 
@@ -43,7 +43,7 @@ auto dotProductOmp(T *x, T *y, int N) {
 }
 
 template <class C>
-auto dotProductOmp(C&& x, C&& y) {
+auto dotProductOmp(C& x, C& y) {
   return dotProductOmp(x.data(), y.data(), x.size());
 }
 
@@ -98,7 +98,7 @@ auto dotProductCuda(T *x, T *y, int N) {
 }
 
 template <class C>
-auto dotProductCuda(C&& x, C&& y) {
+auto dotProductCuda(C& x, C& y) {
   return dotProductCuda(x.data(), y.data(), x.size());
 }
 

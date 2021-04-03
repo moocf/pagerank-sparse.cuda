@@ -1,4 +1,5 @@
 #pragma once
+#include <vector>
 #include <unordered_map>
 #include <algorithm>
 #include <cmath>
@@ -6,6 +7,7 @@
 #include "ceilDiv.h"
 #include "sum.h"
 
+using std::vector;
 using std::unordered_map;
 using std::abs;
 using std::max;
@@ -24,15 +26,15 @@ auto absError(T *x, T *y, int N) {
   return a;
 }
 
-template <class C>
-auto absError(C&& x, C&& y) {
+template <class T>
+auto absError(vector<T>& x, vector<T>& y) {
   return absError(x.data(), y.data(), x.size());
 }
 
 template <class K, class T>
-auto absError(unordered_map<K, T>&& x, unordered_map<K, T>&& y) {
+auto absError(unordered_map<K, T>& x, unordered_map<K, T>& y) {
   T a = T();
-  for (auto&& p : x)
+  for (auto& p : x)
     a += abs(p.second - y[p.first]);
   return a;
 }
@@ -51,15 +53,15 @@ auto absErrorAbs(T *x, T *y, int N) {
   return a;
 }
 
-template <class C>
-auto absErrorAbs(C&& x, C&& y) {
+template <class T>
+auto absErrorAbs(vector<T>& x, vector<T>& y) {
   return absErrorAbs(x.data(), y.data(), x.size());
 }
 
 template <class K, class T>
-auto absErrorAbs(unordered_map<K, T>&& x, unordered_map<K, T>&& y) {
+auto absErrorAbs(unordered_map<K, T>& x, unordered_map<K, T>& y) {
   T a = T();
-  for (auto&& p : x)
+  for (auto& p : x)
     a += abs(abs(p.second) - abs(y[p.first]));
   return a;
 }
@@ -79,8 +81,8 @@ auto absErrorOmp(T *x, T *y, int N) {
   return a;
 }
 
-template <class C>
-auto absErrorOmp(C&& x, C&& y) {
+template <class T>
+auto absErrorOmp(vector<T>& x, vector<T>& y) {
   return errorAbsOmp(x.data(), y.data(), x.size());
 }
 
@@ -134,8 +136,8 @@ auto absErrorCuda(T *x, T *y, int N) {
   return sum(a, G);
 }
 
-template <class C>
-auto absErrorCuda(C&& x, C&& y) {
+template <class T>
+auto absErrorCuda(vector<T>& x, vector<T>& y) {
   return absErrorCuda(x.data(), y.data(), x.size());
 }
 
@@ -189,7 +191,7 @@ auto absErrorAbsCuda(T *x, T *y, int N) {
   return sum(a, G);
 }
 
-template <class C>
-auto absErrorAbsCuda(C&& x, C&& y) {
+template <class T>
+auto absErrorAbsCuda(vector<T>& x, vector<T>& y) {
   return absErrorAbsCuda(x.data(), y.data(), x.size());
 }

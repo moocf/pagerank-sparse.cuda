@@ -1,10 +1,12 @@
 #pragma once
+#include <vector>
 #include <unordered_map>
 #include <algorithm>
 #include <cmath>
 #include <omp.h>
 #include "_cuda.h"
 
+using std::vector;
 using std::unordered_map;
 using std::max;
 using std::abs;
@@ -21,8 +23,8 @@ void multiplyValue(T *a, int N, T v) {
     a[i] *= v;
 }
 
-template <class C, class T>
-void multiplyValue(C& a, T v) {
+template <class T>
+void multiplyValue(vector<T>& a, T v) {
   multiplyValue(a.data(), a.size(), v);
 }
 
@@ -44,8 +46,8 @@ void multiplyValueAt(T *a, I&& is , T v) {
     a[i] *= v;
 }
 
-template <class C, class I, class T>
-void multiplyValueAt(C& a, I&& is, T v) {
+template <class T, class I>
+void multiplyValueAt(vector<T>& a, I&& is, T v) {
   multiplyValueAt(a.data(), is, v);
 }
 
@@ -67,13 +69,13 @@ void multiply(T *a, T *x, T *y, int N) {
     a[i] = x[i] * y[i];
 }
 
-template <class C, class T>
-void multiply(C& a, C&& x, C&& y) {
+template <class T>
+void multiply(vector<T>& a, vector<T>& x, vector<T>& y) {
   multiply(a.data(), x.data(), y.data(), x.size());
 }
 
 template <class K, class T>
-void multiply(unordered_map<K, T>& a, unordered_map<K, T>&& x, unordered_map<K, T>&& y) {
+void multiply(unordered_map<K, T>& a, unordered_map<K, T>& x, unordered_map<K, T>& y) {
   for (auto&& p : x)
     a[p.first] = x[p.first] * y[p.first];
 }
@@ -90,13 +92,13 @@ void multiplyAbs(T *a, T *x, T *y, int N) {
     a[i] = abs(x[i] * y[i]);
 }
 
-template <class C, class T>
-void multiplyAbs(C& a, C&& x, C&& y) {
+template <class T>
+void multiplyAbs(vector<T>& a, vector<T>& x, vector<T>& y) {
   multiplyAbs(a.data(), x.data(), y.data(), x.size());
 }
 
 template <class K, class T>
-void multiplyAbs(unordered_map<K, T>& a, unordered_map<K, T>&& x, unordered_map<K, T>&& y) {
+void multiplyAbs(unordered_map<K, T>& a, unordered_map<K, T>& x, unordered_map<K, T>& y) {
   for (auto&& p : x)
     a[p.first] = abs(x[p.first] * y[p.first]);
 }
@@ -114,8 +116,8 @@ void multiplyValueOmp(T *a, int N, T v) {
     a[i] *= v;
 }
 
-template <class C, class T>
-void multiplyOmp(C& a, T v) {
+template <class T>
+void multiplyValueOmp(vector<T>& a, T v) {
   multiplyValueOmp(a.data(), a.size(), v);
 }
 
@@ -156,8 +158,8 @@ void multiplyValueCuda(T *a, int N, T v) {
   TRY( cudaFree(aD) );
 }
 
-template <class C, class T>
-void multiplyValueCuda(C& a, T v) {
+template <class T>
+void multiplyValueCuda(vector<T>& a, T v) {
   multiplyValueCuda(a.data(), a.size(), v);
 }
 
@@ -201,8 +203,8 @@ void multiplyCuda(T *a, T *x, T *y, int N, T v) {
   TRY( cudaFree(yD) );
 }
 
-template <class C, class T>
-void multiplyCuda(C& a, C&& x, C&& y) {
+template <class T>
+void multiplyCuda(vector<T>& a, vector<T>& x, vector<T>& y) {
   multiplyCuda(a.data(), x.data(), y.data(), x.size());
 }
 
@@ -246,7 +248,7 @@ void multiplyAbsCuda(T *a, T *x, T *y, int N, T v) {
   TRY( cudaFree(yD) );
 }
 
-template <class C, class T>
-void multiplyAbsCuda(C& a, C&& x, C&& y) {
+template <class T>
+void multiplyAbsCuda(vector<T>& a, vector<T>& x, vector<T>& y) {
   multiplyAbsCuda(a.data(), x.data(), y.data(), x.size());
 }
