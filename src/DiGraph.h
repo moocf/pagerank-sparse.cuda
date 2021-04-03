@@ -176,7 +176,7 @@ class DiGraph<int, V, E> : public DiGraphBase<int, V, E> {
 
   void addEdge(int u, int v, E d=E()) {
     // TODO:
-    // if (hasEdge(u, v)) return;
+    if (hasEdge(u, v)) return;
     addVertex(u);
     addVertex(v);
     eto(u).push_back(v);
