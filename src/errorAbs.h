@@ -1,39 +1,38 @@
 #pragma once
-#include <cmath>
-#include <vector>
 #include <unordered_map>
 #include <algorithm>
-#include <memory>
+#include <cmath>
 #include "_cuda.h"
 #include "ceilDiv.h"
 #include "sum.h"
 
-using std::vector;
-using std::unique_ptr;
+using std::unordered_map;
 using std::abs;
 using std::max;
 
 
 
 
-// Finds absolute error between 2 vectors.
+// ABS-ERROR
+// ---------
+
 template <class T>
-T errorAbs(T *x, T *y, int N) {
+auto absError(T *x, T *y, int N) {
   T a = T();
   for (int i=0; i<N; i++)
     a += abs(x[i] - y[i]);
   return a;
 }
 
-template <class T>
-T errorAbs(vector<T>& x, vector<T>& y) {
-  return errorAbs(x.data(), y.data(), x.size());
+template <class C>
+auto absError(C&& x, C&& y) {
+  return absError(x.data(), y.data(), x.size());
 }
 
 template <class K, class T>
-T errorAbs(unordered_map<K, T>& x, unordered_map<K, T>& y) {
+auto absError(unordered_map<K, T>&& x, unordered_map<K, T>&& y) {
   T a = T();
-  for (auto& p : x)
+  for (auto&& p : x)
     a += abs(p.second - y[p.first]);
   return a;
 }
@@ -41,8 +40,38 @@ T errorAbs(unordered_map<K, T>& x, unordered_map<K, T>& y) {
 
 
 
+// ABS-ERROR-ABS
+// -------------
+
 template <class T>
-T errorAbsOmp(T *x, T *y, int N) {
+auto absErrorAbs(T *x, T *y, int N) {
+  T a = T();
+  for (int i=0; i<N; i++)
+    a += abs(abs(x[i]) - abs(y[i]));
+  return a;
+}
+
+template <class C>
+auto absErrorAbs(C&& x, C&& y) {
+  return absErrorAbs(x.data(), y.data(), x.size());
+}
+
+template <class K, class T>
+auto absErrorAbs(unordered_map<K, T>&& x, unordered_map<K, T>&& y) {
+  T a = T();
+  for (auto&& p : x)
+    a += abs(abs(p.second) - abs(y[p.first]));
+  return a;
+}
+
+
+
+
+// ABS-ERROR (OMP)
+// ---------------
+
+template <class T>
+auto absErrorOmp(T *x, T *y, int N) {
   T a = T();
   #pragma omp parallel for reduction (+:a)
   for (int i=0; i<N; i++)
@@ -50,16 +79,19 @@ T errorAbsOmp(T *x, T *y, int N) {
   return a;
 }
 
-template <class T>
-T errorAbsOmp(vector<T>& x, vector<T>& y) {
+template <class C>
+auto absErrorOmp(C&& x, C&& y) {
   return errorAbsOmp(x.data(), y.data(), x.size());
 }
 
 
 
 
+// ABS-ERROR (CUDA)
+// ----------------
+
 template <class T>
-__device__ T errorAbsKernelLoop(T *x, T *y, int N, int i, int DI) {
+__device__ T absErrorKernelLoop(T *x, T *y, int N, int i, int DI) {
   T a = T();
   for (; i<N; i+=DI)
     a += abs(x[i] - y[i]);
@@ -68,23 +100,23 @@ __device__ T errorAbsKernelLoop(T *x, T *y, int N, int i, int DI) {
 
 
 template <class T>
-__global__ void errorAbsKernel(T *a, T *x, T *y, int N) {
+__global__ void absErrorKernel(T *a, T *x, T *y, int N) {
   DEFINE(t, b, B, G);
   __shared__ T cache[BLOCK_DIM];
 
-  cache[t] = errorAbsKernelLoop(x, y, N, B*b+t, G*B);
+  cache[t] = absErrorKernelLoop(x, y, N, B*b+t, G*B);
   sumKernelReduce(cache, B, t);
   if (t == 0) a[b] = cache[0];
 }
 
 
 template <class T>
-T errorAbsCuda(T *x, T *y, int N) {
+auto absErrorCuda(T *x, T *y, int N) {
   int B = BLOCK_DIM;
   int G = min(ceilDiv(N, B), GRID_DIM);
   size_t N1 = N * sizeof(T);
   size_t G1 = G * sizeof(T);
-  unique_ptr<T> a(new T[G1]);
+  T a[GRID_DIM];
 
   T *xD, *yD, *aD;
   TRY( cudaMalloc(&xD, N1) );
@@ -93,16 +125,71 @@ T errorAbsCuda(T *x, T *y, int N) {
   TRY( cudaMemcpy(xD, x, N1, cudaMemcpyHostToDevice) );
   TRY( cudaMemcpy(yD, y, N1, cudaMemcpyHostToDevice) );
 
-  errorAbsKernel<<<G, B>>>(aD, xD, yD, N);
-  TRY( cudaMemcpy(a.get(), aD, G1, cudaMemcpyDeviceToHost) );
+  absErrorKernel<<<G, B>>>(aD, xD, yD, N);
+  TRY( cudaMemcpy(a, aD, G1, cudaMemcpyDeviceToHost) );
 
   TRY( cudaFree(yD) );
   TRY( cudaFree(xD) );
   TRY( cudaFree(aD) );
-  return sum(a.get(), G);
+  return sum(a, G);
 }
 
+template <class C>
+auto absErrorCuda(C&& x, C&& y) {
+  return absErrorCuda(x.data(), y.data(), x.size());
+}
+
+
+
+
+// ABS-ERROR-ABS (CUDA)
+// --------------------
+
 template <class T>
-T errorAbsCuda(vector<T>& x, vector<T>& y) {
-  return errorAbsCuda(x.data(), y.data(), x.size());
+__device__ T absErrorAbsKernelLoop(T *x, T *y, int N, int i, int DI) {
+  T a = T();
+  for (; i<N; i+=DI)
+    a += abs(abs(x[i]) - abs(y[i]));
+  return a;
+}
+
+
+template <class T>
+__global__ void absErrorAbsKernel(T *a, T *x, T *y, int N) {
+  DEFINE(t, b, B, G);
+  __shared__ T cache[BLOCK_DIM];
+
+  cache[t] = absErrorAbsKernelLoop(x, y, N, B*b+t, G*B);
+  sumKernelReduce(cache, B, t);
+  if (t == 0) a[b] = cache[0];
+}
+
+
+template <class T>
+auto absErrorAbsCuda(T *x, T *y, int N) {
+  int B = BLOCK_DIM;
+  int G = min(ceilDiv(N, B), GRID_DIM);
+  size_t N1 = N * sizeof(T);
+  size_t G1 = G * sizeof(T);
+  T a[GRID_DIM];
+
+  T *xD, *yD, *aD;
+  TRY( cudaMalloc(&xD, N1) );
+  TRY( cudaMalloc(&yD, N1) );
+  TRY( cudaMalloc(&aD, G1) );
+  TRY( cudaMemcpy(xD, x, N1, cudaMemcpyHostToDevice) );
+  TRY( cudaMemcpy(yD, y, N1, cudaMemcpyHostToDevice) );
+
+  absErrorAbsKernel<<<G, B>>>(aD, xD, yD, N);
+  TRY( cudaMemcpy(a, aD, G1, cudaMemcpyDeviceToHost) );
+
+  TRY( cudaFree(yD) );
+  TRY( cudaFree(xD) );
+  TRY( cudaFree(aD) );
+  return sum(a, G);
+}
+
+template <class C>
+auto absErrorAbsCuda(C&& x, C&& y) {
+  return absErrorAbsCuda(x.data(), y.data(), x.size());
 }
