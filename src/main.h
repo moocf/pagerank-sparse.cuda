@@ -24,3 +24,4 @@
 #include "components.h"
 #include "sort.h"
 #include "pageRank.h"
+#include "pageRankSticd.h"

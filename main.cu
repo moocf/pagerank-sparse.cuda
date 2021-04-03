@@ -16,18 +16,20 @@ void runPageRankPush(G& g, bool all) {
 }
 
 
-template <class G>
-void runPageRank(G& g, bool all) {
+template <class G, class H>
+void runPageRank(G& g, H& gt, bool all) {
   typedef PageRankMode Mode;
   float t;
-  auto ranks1 = pageRank(t, g);
-  printf("[%07.1f ms] pageRank               \n", t); if (all) print(ranks1);
-  auto ranks2 = pageRankCuda(t, g, {Mode::BLOCK});
-  printf("[%07.1f ms] pageRankCuda {block}   \n", t); if (all) print(ranks2);
-  auto ranks3 = pageRankCuda(t, g, {Mode::THREAD});
-  printf("[%07.1f ms] pageRankCuda {thread}  \n", t); if (all) print(ranks3);
-  auto ranks4 = pageRankCuda(t, g, {Mode::SWITCHED});
-  printf("[%07.1f ms] pageRankCuda {switched}\n", t); if (all) print(ranks4);
+  auto r1 = pageRank(t, gt);
+  printf("[%07.1f ms] pageRank               \n", t); if (all) print(r1);
+  auto r2 = pageRankCuda(t, gt, {Mode::BLOCK});
+  printf("[%07.1f ms] pageRankCuda {block}   \n", t); if (all) print(r2);
+  auto r3 = pageRankCuda(t, gt, {Mode::THREAD});
+  printf("[%07.1f ms] pageRankCuda {thread}  \n", t); if (all) print(r3);
+  auto r4 = pageRankCuda(t, gt, {Mode::SWITCHED});
+  printf("[%07.1f ms] pageRankCuda {switched}\n", t); if (all) print(r4);
+  auto r5 = pageRankSticdCuda(t, g, gt);
+  printf("[%07.1f ms] pageRankSticdCuda      \n", t); if (all) print(r5);
 }
 
 
@@ -45,7 +47,7 @@ int main(int argc, char **argv) {
   transposeWithDegree(g, h);
   print(h);
   // runPageRankPush(g, all);
-  runPageRank(h, all);
+  runPageRank(g, h, all);
   // runAdd();
   // runFill();
   // runSum();
