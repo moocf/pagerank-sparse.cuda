@@ -1,4 +1,5 @@
 #include "src/main.h"
+#include "setups.h"
 #include "tests.h"
 #include "runs.h"
 
@@ -36,6 +37,7 @@ int main(int argc, char **argv) {
   char *file = argv[1];
   bool all = argc > 2;
 
+  setupAll();
   testAll();
   printf("Loading graph %s ...\n", file);
   readMtx(file, g);
