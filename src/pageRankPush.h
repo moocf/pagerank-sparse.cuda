@@ -34,15 +34,10 @@ auto& pageRankPushCore(C& a, C& r, G& x, T p, T E) {
 }
 
 
-template <class G, class T>
-auto pageRankPush(float& t, G& x, T p, T E) {
+template <class G, class H, class T=float>
+auto pageRankPush(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
   auto a = x.vertexContainer(T());
   auto r = x.vertexContainer(T());
-  t = measureDuration([&]() { pageRankPushCore(a, r, x, p, E); });
+  t = measureDuration([&]() { pageRankPushCore(a, r, x, o.damping, o.convergence); });
   return a;
-}
-
-template <class G, class T=float>
-auto pageRankPush(float& t, G& x, PageRankOptions<T> o=PageRankOptions<T>()) {
-  return pageRankPush(t, x, o.damping, o.convergence);
 }
