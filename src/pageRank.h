@@ -14,7 +14,6 @@
 #include "bit.h"
 #include "add.h"
 #include "sum.h"
-#include "dotProduct.h"
 #include "fill.h"
 #include "multiply.h"
 #include "errorAbs.h"

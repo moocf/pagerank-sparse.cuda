@@ -1,38 +1,40 @@
 #pragma once
-#include <vector>
 #include <algorithm>
-#include <memory>
 #include <omp.h>
 #include "_cuda.h"
 #include "ceilDiv.h"
 #include "sum.h"
 
 using std::vector;
-using std::unique_ptr;
 using std::max;
 
 
 
 
-// Finds sum of element-by-element product of 2 vectors.
+// DOT-PRODUCT
+// -----------
+
 template <class T>
-T dotProduct(T *x, T *y, int N) {
+auto dotProduct(T *x, T *y, int N) {
   T a = T();
   for (int i=0; i<N; i++)
     a += x[i] * y[i];
   return a;
 }
 
-template <class T>
-T dotProduct(vector<T>& x, vector<T>& y) {
+template <class C>
+auto dotProduct(C&& x, C&& y) {
   return dotProduct(x.data(), y.data(), x.size());
 }
 
 
 
 
+// DOT-PRODUCT (OMP)
+// -----------------
+
 template <class T>
-T dotProductOmp(T *x, T *y, int N) {
+auto dotProductOmp(T *x, T *y, int N) {
   T a = T();
   #pragma omp parallel for reduction (+:a)
   for (int i=0; i<N; i++)
@@ -40,27 +42,22 @@ T dotProductOmp(T *x, T *y, int N) {
   return a;
 }
 
-template <class T>
-T dotProductOmp(vector<T>& x, vector<T>& y) {
+template <class C>
+auto dotProductOmp(C&& x, C&& y) {
   return dotProductOmp(x.data(), y.data(), x.size());
 }
 
 
 
 
+// DOT-PRODUCT (CUDA)
+// ------------------
+
 template <class T>
 __device__ T dotProductKernelLoop(T *x, T *y, int N, int i, int DI) {
   T a = T();
   for (; i<N; i+=DI)
     a += x[i] * y[i];
-  return a;
-}
-
-template <class T>
-__device__ T dotProductAtKernelLoop(T *x, T *y, int *is, int N, int i, int DI) {
-  T a = T();
-  for (; i<N; i+=DI)
-    a += x[is[i]] * y[is[i]];
   return a;
 }
 
@@ -77,12 +74,12 @@ __global__ void dotProductKernel(T *a, T *x, T *y, int N) {
 
 
 template <class T>
-T dotProductCuda(T *x, T *y, int N) {
+auto dotProductCuda(T *x, T *y, int N) {
   int B = BLOCK_DIM;
   int G = min(ceilDiv(N, B), GRID_DIM);
   size_t N1 = N * sizeof(T);
   size_t G1 = G * sizeof(T);
-  unique_ptr<T> a(new T[G1]);
+  T a[GRID_DIM];
 
   T *xD, *yD, *aD;
   TRY( cudaMalloc(&xD, N1) );
@@ -92,15 +89,29 @@ T dotProductCuda(T *x, T *y, int N) {
   TRY( cudaMemcpy(yD, y, N1, cudaMemcpyHostToDevice) );
 
   dotProductKernel<<<G, B>>>(aD, xD, yD, N);
-  TRY( cudaMemcpy(a.get(), aD, G1, cudaMemcpyDeviceToHost) );
+  TRY( cudaMemcpy(a, aD, G1, cudaMemcpyDeviceToHost) );
 
   TRY( cudaFree(yD) );
   TRY( cudaFree(xD) );
   TRY( cudaFree(aD) );
-  return sum(a.get(), G);
+  return sum(a, G);
 }
 
-template <class T>
-T dotProductCuda(vector<T>& x, vector<T>& y) {
+template <class C>
+auto dotProductCuda(C&& x, C&& y) {
   return dotProductCuda(x.data(), y.data(), x.size());
+}
+
+
+
+
+// DOT-PRODUCT-AT (CUDA)
+// ---------------------
+
+template <class T>
+__device__ T dotProductAtKernelLoop(T *x, T *y, int *is, int N, int i, int DI) {
+  T a = T();
+  for (; i<N; i+=DI)
+    a += x[is[i]] * y[is[i]];
+  return a;
 }
