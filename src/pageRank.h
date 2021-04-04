@@ -37,27 +37,26 @@ enum struct PageRankMode {
   SWITCHED
 };
 
-struct PageRankOptimizations {
-  bool components;
-  bool sort;
-  bool identical;
-  bool chain;
-  bool converged;
+struct PageRankFlags {
+  bool splitComponents;
+  bool orderComponents;
+  bool removeIdenticals;
+  bool removeChains;
+  bool skipConverged;
 };
 
 template <class T>
 struct PageRankOptions {
   typedef PageRankMode Mode;
-  typedef PageRankOptimizations Optimizations;
-  Mode mode;
-  Optimizations optimizations;
-
+  typedef PageRankFlags Flags;
+  Mode  mode;
+  Flags flags;
   T damping;
   T convergence;
 
-  PageRankOptions(Mode _mode=Mode::BLOCK, Optimizations _optimizations={}, T _damping=0.85, T _convergence=1e-6) {
+  PageRankOptions(Mode _mode=Mode::BLOCK, Flags _flags={}, T _damping=0.85, T _convergence=1e-6) {
     mode = _mode;
-    optimizations = _optimizations;
+    flags = _flags;
     damping = _damping;
     convergence = _convergence;
   }
@@ -65,6 +64,9 @@ struct PageRankOptions {
 
 
 
+
+// PAGE-RANK
+// ---------
 
 template <class G, class C, class T>
 T pageRankTeleport(C& r, G& x, T p, int N) {
@@ -134,7 +136,7 @@ auto pageRank(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) 
 
 
 
-// PAGE-RANK (CUDA KERNELS)
+// PAGE-RANK KERNELS (CUDA)
 // ------------------------
 
 template <class T, class V>
@@ -160,7 +162,7 @@ __device__ void pageRankSetKernel(T *a, int v, T E, T r) {
 
 
 template <class T>
-__global__ void pageRankBlockKernel(T *a, T *c, int *vfrom, int *efrom, T c0, int N, T E) {
+__global__ void pageRankBlockKernel(T *a, T *c, int *vfrom, int *efrom, T c0, T E, int N) {
   DEFINE(t, b, B, G);
   __shared__ T cache[BLOCK_DIM];
 
@@ -176,7 +178,7 @@ __global__ void pageRankBlockKernel(T *a, T *c, int *vfrom, int *efrom, T c0, in
 
 
 template <class T>
-__global__ void pageRankThreadKernel(T *a, T *c, int *vfrom, int *efrom, T c0, int N, T E) {
+__global__ void pageRankThreadKernel(T *a, T *c, int *vfrom, int *efrom, T c0, T E, int N) {
   DEFINE(t, b, B, G);
 
   for (int v=B*b+t; v<N; v+=G*B) {
@@ -194,32 +196,28 @@ __global__ void pageRankThreadKernel(T *a, T *c, int *vfrom, int *efrom, T c0, i
 // -------------------------------
 
 template <class T>
-void pageRankBlockKernelCall(cudaStream_t s, T *a, T *c, int *vfrom, int *efrom, T c0, int N, T E) {
+void pageRankBlockKernelCall(cudaStream_t s, T *a, T *c, int *vfrom, int *efrom, T c0, T E, int N) {
   int B = BLOCK_DIM;
   int G = min(N, GRID_DIM);
-  pageRankBlockKernel<<<G, B, 0, s>>>(a, c, vfrom, efrom, c0, N, E);
+  pageRankBlockKernel<<<G, B, 0, s>>>(a, c, vfrom, efrom, c0, E, N);
 }
 
 
 template <class T>
-void pageRankThreadKernelCall(cudaStream_t s, T *a, T *c, int *vfrom, int *efrom, T c0, int N, T E) {
+void pageRankThreadKernelCall(cudaStream_t s, T *a, T *c, int *vfrom, int *efrom, T c0, T E, int N) {
   int B = BLOCK_DIM;
   int G = min(ceilDiv(N, B), GRID_DIM);
-  pageRankThreadKernel<<<G, B, 0, s>>>(a, c, vfrom, efrom, c0, N, E);
+  pageRankThreadKernel<<<G, B, 0, s>>>(a, c, vfrom, efrom, c0, E, N);
 }
 
 
-template <class T>
-void pageRankKernelCall(cudaStream_t s1, cudaStream_t s2, PageRankMode M, int S, T *a, T *c, int *vfrom, int *efrom, T c0, int N, T E) {
-  typedef PageRankMode Mode;
-  switch (M) {
-    default:
-    case Mode::BLOCK:   pageRankBlockKernelCall  (s1, a, c, vfrom, efrom, c0, N, E); break;
-    case Mode::THREAD:  pageRankThreadKernelCall (s1, a, c, vfrom, efrom, c0, N, E); break;
-    case Mode::SWITCHED:
-      pageRankThreadKernelCall(s1, a,   c, vfrom,   efrom, c0, S,   E);
-      pageRankBlockKernelCall (s2, a+S, c, vfrom+S, efrom, c0, N-S, E);
-      break;
+template <class T, class I>
+void pageRankKernelWave(cudaStream_t s, T *a, T *c, int *vfrom, int *efrom, T c0, T E, I&& ns) {
+  int i = 0;
+  for (int n : ns) {
+    if (n > 0) pageRankBlockKernelCall (s, a+i, c, vfrom+i, efrom, c0, E, n);
+    else       pageRankThreadKernelCall(s, a+i, c, vfrom+i, efrom, c0, E, -n);
+    i += abs(n);
   }
 }
 
