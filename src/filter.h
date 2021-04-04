@@ -53,7 +53,7 @@ auto filter(C&& x, const F& fn) {
 
 //     Iterator(const F& fn, const I ie, I it) : fn(fn), ie(ie), it(it) { ++(*this); }
 //     ITERATOR_DEREF(Iterator, *it, *it, NULL)
-//     ITERATOR_NEXTP(Iterator, while(it!=ie && !fn(*it)) it++)
+//     ITERATOR_NEXTP(Iterator, while (it!=ie && !fn(*it)) it++)
 //     ITERATOR_ADVANCEP(Iterator, i, for (; i>=0; i--) ++(*this))
 //     ITERATOR_COMPARISION(Iterator, a, b, a.it, b.it)
 //   };
