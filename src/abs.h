@@ -2,101 +2,101 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
+#include <cmath>
 #include <omp.h>
 #include "_cuda.h"
 
 using std::vector;
 using std::unordered_map;
-using std::fill;
 using std::max;
+using std::abs;
 
 
 
-
-// FILL
-// ----
+// ABS
+// ---
 
 template <class T>
-void fill(T *a, int N, T v) {
+void abs(T *a, int N) {
   for (int i=0; i<N; i++)
-    a[i] = v;
+    a[i] = abs(a[i]);
 }
 
 template <class T>
-void fill(vector<T>& a, T v) {
-  fill(a.begin(), a.end(), v);
+void abs(vector<T>& a) {
+  abs(a.begin(), a.end());
 }
 
 template <class K, class T>
-void fill(unordered_map<K, T>& a, T v) {
+void abs(unordered_map<K, T>& a) {
   for (auto& p : a)
-    p.second = v;
+    p.second = abs(p.second);
 }
 
 
 
 
-// FILL-AT
-// -------
+// ABS-AT
+// ------
 
 template <class T, class I>
-void fillAt(T *a, I&& is, T v) {
+void absAt(T *a, I&& is) {
   for (int i : is)
-    a[i] = v;
+    a[i] = abs(a[i]);
 }
 
 template <class T, class I>
-void fillAt(vector<T>& a, I&& is, T v) {
-  fillAt(a.data(), is, v);
+void absAt(vector<T>& a, I&& is) {
+  absAt(a.data(), is);
 }
 
 template <class K, class T, class I>
-void fillAt(unordered_map<K, T>& a, I&& ks, T v) {
+void absAt(unordered_map<K, T>& a, I&& ks) {
   for (auto&& k : ks)
-    a[k] = v;
+    a[k] = abs(a[k]);
 }
 
 
 
 
-// FILL (OMP)
+// ABS (OMP)
+// ---------
+
+template <class T>
+void absOmp(T *a, int N) {
+  #pragma omp parallel for
+  for (int i=0; i<N; i++)
+    a[i] = abs(a[i]);
+}
+
+template <class T>
+void fillOmp(vector<T>& a) {
+  absOmp(a.data(), a.size());
+}
+
+
+
+
+// ABS (CUDA)
 // ----------
 
 template <class T>
-void fillOmp(T *a, int N, T v) {
-  #pragma omp parallel for
-  for (int i=0; i<N; i++)
-    a[i] = v;
-}
-
-template <class T>
-void fillOmp(vector<T>& a, T v) {
-  fillOmp(a.data(), a.size(), v);
-}
-
-
-
-
-// FILL (CUDA)
-// -----------
-
-template <class T>
-__device__ void fillKernelLoop(T *a, int N, T v, int i, int DI) {
+__device__ void absKernelLoop(T *a, int N, int i, int DI) {
   for (; i<N; i+=DI)
-    a[i] = v;
+    a[i] = abs(a[i]);
 }
 
 
 template <class T>
-__global__ void fillKernel(T *a, int N, T v) {
+__global__ void fillKernel(T *a, int N) {
   DEFINE(t, b, B, G);
 
-  fillKernelLoop(a, N, v, B*b+t, G*B);
+  absKernelLoop(a, N, B*b+t, G*B);
 }
 
 
 template <class T>
-void fillCuda(T *a, int N, T v) {
+void absCuda(T *a, int N) {
   int B = BLOCK_DIM;
   int G = min(ceilDiv(N, B), GRID_DIM);
   size_t N1 = N * sizeof(T);
@@ -105,13 +105,13 @@ void fillCuda(T *a, int N, T v) {
   TRY( cudaMalloc(&aD, N1) );
   TRY( cudaMemcpy(aD, a, N1, cudaMemcpyHostToDevice) );
 
-  fillKernel<<<G, B>>>(aD, N, v);
+  absKernel<<<G, B>>>(aD, N, v);
   TRY( cudaMemcpy(a, aD, N1, cudaMemcpyDeviceToHost) );
 
   TRY( cudaFree(aD) );
 }
 
 template <class T>
-void fillCuda(vector<T>& a, T v) {
-  fillCuda(a.data(), a.size(), v);
+void absCuda(vector<T>& a) {
+  absCuda(a.data(), a.size());
 }
