@@ -164,7 +164,7 @@ const char* testRange() {
 }
 
 
-const char* testFill() {
+const char* testCopyValue() {
   vector<int> a {1, 2, 3, 4};
   vector<int> b {1, 2, 3, 4};
   vector<int> c {1, 2, 3, 4};
@@ -174,18 +174,18 @@ const char* testFill() {
   vector<int> is {0, 2};
   vector<char> ks {'a', 'c'};
 
-  fill(a, 9);
-  fillOmp(b, 9);
-  fillCuda(c, 9);
-  fill(m, 9);
-  fillAt(d, is, 9);
-  fillAt(n, ks, 9);
-  for (auto& v : a) if (v != 9) return "fillV";
-  for (auto& v : b) if (v != 9) return "fillOmpV";
-  for (auto& v : c) if (v != 9) return "fillCudaV";
-  for (auto& p : m) if (p.second != 9) return "fillM";
-  if (!(d[0]==9 && d[1]==2 && d[2]==9 && d[3]==4)) return "fillAtV";
-  if (!(n['a']==9 && n['b']==2 && n['c']==9)) return "fillAtM";
+  copyValue(a, 9);
+  copyValueOmp(b, 9);
+  copyValueCuda(c, 9);
+  copyValue(m, 9);
+  copyValueAt(d, 9, is);
+  copyValueAt(n, 9, ks);
+  for (auto& v : a) if (v != 9) return "copyValueV";
+  for (auto& v : b) if (v != 9) return "copyValueOmpV";
+  for (auto& v : c) if (v != 9) return "copyValueCudaV";
+  for (auto& p : m) if (p.second != 9) return "copyValueM";
+  if (!(d[0]==9 && d[1]==2 && d[2]==9 && d[3]==4)) return "copyValueAtV";
+  if (!(n['a']==9 && n['b']==2 && n['c']==9)) return "copyValueAtM";
   return NULL;
 }
 
@@ -204,8 +204,8 @@ const char* testAdd() {
   addValueOmp(b, 1);
   addValueCuda(c, 1);
   addValue(m, 1);
-  addValueAt(d, is, 1);
-  addValueAt(n, ks, 1);
+  addValueAt(d, 1, is);
+  addValueAt(n, 1, ks);
   if (!(a[0]==2 && a[1]==3 && a[2]==4 && a[3]==5)) return "addV";
   if (!(b[0]==2 && b[1]==3 && b[2]==4 && b[3]==5)) return "addOmpV";
   if (!(c[0]==2 && c[1]==3 && c[2]==4 && c[3]==5)) return "addCudaV";
@@ -558,7 +558,7 @@ void testAll() {
     testLowerBound(),
     testRange(),
     testTransform(),
-    testFill(),
+    testCopyValue(),
     testAdd(),
     testSum(),
     testDotProduct(),

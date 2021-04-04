@@ -41,18 +41,18 @@ void multiplyValue(unordered_map<K, T>& a, T v) {
 // -----------------
 
 template <class T, class I>
-void multiplyValueAt(T *a, I&& is , T v) {
+void multiplyValueAt(T *a, T v, I&& is) {
   for (int i : is)
     a[i] *= v;
 }
 
 template <class T, class I>
-void multiplyValueAt(vector<T>& a, I&& is, T v) {
+void multiplyValueAt(vector<T>& a, T v, I&& is) {
   multiplyValueAt(a.data(), is, v);
 }
 
 template <class K, class T, class I>
-void multiplyValueAt(unordered_map<K, T>& a, I&& ks, T v) {
+void multiplyValueAt(unordered_map<K, T>& a, T v, I&& ks) {
   for (auto&& k : ks)
     a[k] *= v;
 }

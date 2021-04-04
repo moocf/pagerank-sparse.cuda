@@ -260,20 +260,20 @@ auto sumAbsCuda(vector<T>& x) {
 // -------------
 
 template <class T>
-__device__ T sumAtKernelLoop(T *x, int *is, int N, int i, int DI) {
+__device__ T sumAtKernelLoop(T *x, int *is, int IS, int i, int DI) {
   T a = T();
-  for (; i<N; i+=DI)
+  for (; i<IS; i+=DI)
     a += x[is[i]];
   return a;
 }
 
 
 template <class T>
-__global__ void sumAtKernel(T *a, T *x, T *is, int N) {
+__global__ void sumAtKernel(T *a, T *x, T *is, int IS) {
   DEFINE(t, b, B, G);
   __shared__ T cache[BLOCK_DIM];
 
-  cache[t] = sumAtKernelLoop(x, is, N, B*b+t, G*B);
+  cache[t] = sumAtKernelLoop(x, is, IS, B*b+t, G*B);
   sumKernelReduce(cache, B, t);
   if (t == 0) a[b] = cache[0];
 }
@@ -285,20 +285,20 @@ __global__ void sumAtKernel(T *a, T *x, T *is, int N) {
 // -----------------
 
 template <class T>
-__device__ T sumAbsAtKernelLoop(T *x, int *is, int N, int i, int DI) {
+__device__ T sumAbsAtKernelLoop(T *x, int *is, int IS, int i, int DI) {
   T a = T();
-  for (; i<N; i+=DI)
+  for (; i<IS; i+=DI)
     a += abs(x[is[i]]);
   return a;
 }
 
 
 template <class T>
-__global__ void sumAbsAtKernel(T *a, T *x, T *is, int N) {
+__global__ void sumAbsAtKernel(T *a, T *x, T *is, int IS) {
   DEFINE(t, b, B, G);
   __shared__ T cache[BLOCK_DIM];
 
-  cache[t] = sumAbsAtKernelLoop(x, is, N, B*b+t, G*B);
+  cache[t] = sumAbsAtKernelLoop(x, is, IS, B*b+t, G*B);
   sumKernelReduce(cache, B, t);
   if (t == 0) a[b] = cache[0];
 }
@@ -313,7 +313,7 @@ template <class T, class C>
 __device__ T sumIfNotKernelLoop(T *x, C *cs, int N, int i, int DI) {
   T a = T();
   for (; i<N; i+=DI)
-    if (cs[i] == 0) a += x[i];
+    if (!cs[i]) a += x[i];
   return a;
 }
 

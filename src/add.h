@@ -41,18 +41,18 @@ void addValue(unordered_map<K, T>& a, T v) {
 // ------------
 
 template <class T, class I>
-void addValueAt(T *a, I&& is , T v) {
+void addValueAt(T *a, T v, I&& is) {
   for (int i : is)
     a[i] += v;
 }
 
 template <class T, class I>
-void addValueAt(vector<T>& a, I&& is, T v) {
+void addValueAt(vector<T>& a, T v, I&& is) {
   addValueAt(a.data(), is, v);
 }
 
 template <class K, class T, class I>
-void addValueAt(unordered_map<K, T>& a, I&& ks, T v) {
+void addValueAt(unordered_map<K, T>& a, T v, I&& ks) {
   for (auto&& k : ks)
     a[k] += v;
 }
