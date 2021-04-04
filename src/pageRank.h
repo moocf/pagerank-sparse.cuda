@@ -7,11 +7,8 @@
 #include <memory>
 #include <omp.h>
 #include "_cuda.h"
-#include "DiGraph.h"
 #include "ceilDiv.h"
 #include "measure.h"
-#include "count.h"
-#include "add.h"
 #include "sum.h"
 #include "fill.h"
 #include "multiply.h"
@@ -24,7 +21,6 @@
 
 using std::vector;
 using std::unordered_map;
-using std::unique_ptr;
 using std::lower_bound;
 using std::swap;
 using std::max;
@@ -38,7 +34,6 @@ using std::abs;
 enum struct PageRankMode {
   BLOCK,
   THREAD,
-  DYNAMIC,
   SWITCHED
 };
 
@@ -139,7 +134,7 @@ auto pageRank(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) 
 
 
 
-// PAGE-RANK KERNELS (CUDA)
+// PAGE-RANK (CUDA KERNELS)
 // ------------------------
 
 template <class T, class V>
@@ -193,20 +188,6 @@ __global__ void pageRankThreadKernel(T *a, T *c, int *vfrom, int *efrom, T c0, i
 }
 
 
-template <class T>
-__global__ void pageRankDynamicKernel(T *a, T *c, int *vfrom, int *efrom, T c0, int N, T E) {
-  DEFINE(t, b, B, G);
-
-  for (int v=B*b+t; v<N; v+=G*B) {
-    if (pageRankDoneKernel(a, E, v)) continue;
-    int ebgn = vfrom[v];
-    int ideg = vfrom[v+1]-vfrom[v];
-    if (ideg >= B/2) pageRankBlockKernel<<<1, B>>>(&a[v], c, &vfrom[v], efrom, c0, 1, E);
-    else pageRankSetKernel(a, E, v, c0 + sumAtKernelLoop(c, efrom+ebgn, ideg, 0, 1));
-  }
-}
-
-
 
 
 // PAGE-RANK KERNEL CALLERS (CUDA)
@@ -229,21 +210,12 @@ void pageRankThreadKernelCall(cudaStream_t s, T *a, T *c, int *vfrom, int *efrom
 
 
 template <class T>
-void pageRankDynamicKernelCall(cudaStream_t s, T *a, T *c, int *vfrom, int *efrom, T c0, int N, T E) {
-  int B = BLOCK_DIM;
-  int G = min(ceilDiv(N, B), GRID_DIM);
-  pageRankDynamicKernel<<<G, B, 0, s>>>(a, c, vfrom, efrom, c0, N, E);
-}
-
-
-template <class T>
 void pageRankKernelCall(cudaStream_t s1, cudaStream_t s2, PageRankMode M, int S, T *a, T *c, int *vfrom, int *efrom, T c0, int N, T E) {
   typedef PageRankMode Mode;
   switch (M) {
     default:
     case Mode::BLOCK:   pageRankBlockKernelCall  (s1, a, c, vfrom, efrom, c0, N, E); break;
     case Mode::THREAD:  pageRankThreadKernelCall (s1, a, c, vfrom, efrom, c0, N, E); break;
-    case Mode::DYNAMIC: pageRankDynamicKernelCall(s1, a, c, vfrom, efrom, c0, N, E); break;
     case Mode::SWITCHED:
       pageRankThreadKernelCall(s1, a,   c, vfrom,   efrom, c0, S,   E);
       pageRankBlockKernelCall (s2, a+S, c, vfrom+S, efrom, c0, N-S, E);
