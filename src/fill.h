@@ -46,7 +46,7 @@ void fillAt(T *a, T v, I&& is) {
 
 template <class T, class I>
 void fillAt(vector<T>& a, T v, I&& is) {
-  fillAt(a.data(), is, v);
+  fillAt(a.data(), v, is);
 }
 
 template <class K, class T, class I>

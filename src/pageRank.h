@@ -100,7 +100,7 @@ template <class G, class C, class T>
 auto& pageRankLoop(C& a, C& r, C& f, C& c, G& x, T p, T E) {
   T e0 = T();
   int N = x.order();
-  fillAt(r, x.vertices(), T(1)/N);
+  fillAt(r, T(1)/N, x.vertices());
   pageRankFactor(f, x, p);
   while (1) {
     T c0 = pageRankTeleport(r, x, p, N);
@@ -117,7 +117,7 @@ auto& pageRankLoop(C& a, C& r, C& f, C& c, G& x, T p, T E) {
 template <class G, class C, class T>
 auto& pageRankCore(C& a, C& r, C& f, C& c, G& x, T p, T E) {
   int N = x.order();
-  fillAt(r, x.vertices(), T(1)/N);
+  fillAt(r, T(1)/N, x.vertices());
   pageRankFactor(f, x, p);
   return pageRankLoop(a, r, f, c, x, p, E);
   // fillAt(b, x.nonVertices(), T());

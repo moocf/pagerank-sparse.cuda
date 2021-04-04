@@ -17,7 +17,7 @@ void pageRankPushStep(C& a, C& r, G& x, T p) {
   fill(a, (1-p)/N);
   for (int u : x.vertices()) {
     int d = x.degree(u);
-    if (d > 0) addValueAt(a, x.edges(u), p*r[u]/d);
+    if (d > 0) addValueAt(a, p*r[u]/d, x.edges(u));
     else addValue(a, p*r[u]/N);
   }
 }
@@ -35,7 +35,7 @@ auto& pageRankPushCore(C& a, C& r, G& x, T p, T E) {
     swap(a, r);
     e0 = e1;
   }
-  fillAt(a, x.nonVertices(), T());
+  fillAt(a, T(), x.nonVertices());
   return a;
 }
 

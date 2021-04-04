@@ -48,7 +48,7 @@ void addValueAt(T *a, T v, I&& is) {
 
 template <class T, class I>
 void addValueAt(vector<T>& a, T v, I&& is) {
-  addValueAt(a.data(), is, v);
+  addValueAt(a.data(), v, is);
 }
 
 template <class K, class T, class I>

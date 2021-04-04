@@ -15,11 +15,11 @@ void runAdd() {
   auto is3 = filter(is2, [&](int i) { return true; });
   t = measureDuration([&]() { addValue(x, N, 1.0f); });
   printf("[%07.1f ms] addValue(x, N, v)\n", t);
-  t = measureDuration([&]() { addValueAt(x, is1, 1.0f); });
+  t = measureDuration([&]() { addValueAt(x, 1.0f, is1); });
   printf("[%07.1f ms] addValueAt(x, <vector> is, v)\n", t);
-  t = measureDuration([&]() { addValueAt(x, is2, 1.0f); });
+  t = measureDuration([&]() { addValueAt(x, 1.0f, is2); });
   printf("[%07.1f ms] addValueAt(x, <range>  is, v)\n", t);
-  t = measureDuration([&]() { addValueAt(x, is3, 1.0f); });
+  t = measureDuration([&]() { addValueAt(x, 1.0f, is3); });
   printf("[%07.1f ms] addValueAt(x, <filter> is, v)\n", t);
 }
 

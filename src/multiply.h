@@ -48,7 +48,7 @@ void multiplyValueAt(T *a, T v, I&& is) {
 
 template <class T, class I>
 void multiplyValueAt(vector<T>& a, T v, I&& is) {
-  multiplyValueAt(a.data(), is, v);
+  multiplyValueAt(a.data(), v, is);
 }
 
 template <class K, class T, class I>
