@@ -10,6 +10,7 @@
 #include "range.h"
 #include "transform.h"
 #include "print.h"
+#include "stringify.h"
 #include "measure.h"
 #include "fill.h"
 #include "copy.h"

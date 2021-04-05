@@ -1,3 +1,5 @@
+#include <iostream>
+#include <stdio.h>
 #include "src/main.h"
 #include "setups.h"
 #include "tests.h"
@@ -18,18 +20,22 @@ void runPageRankPush(G& g, H& gt, bool all) {
 
 template <class G, class H>
 void runPageRank(G& g, H& gt, bool all) {
-  typedef PageRankMode Mode;
-  float t;
-  auto r1 = pageRank(t, g, gt);
-  printf("[%07.1f ms] pageRank               \n", t); if (all) print(r1);
-  auto r2 = pageRankCuda(t, g, gt, {Mode::BLOCK});
-  printf("[%07.1f ms] pageRankCuda {block}   \n", t); if (all) print(r2);
-  auto r3 = pageRankCuda(t, g, gt, {Mode::THREAD});
-  printf("[%07.1f ms] pageRankCuda {thread}  \n", t); if (all) print(r3);
-  auto r4 = pageRankCuda(t, g, gt, {Mode::SWITCHED});
-  printf("[%07.1f ms] pageRankCuda {switched}\n", t); if (all) print(r4);
-  auto r5 = pageRankSticdCuda(t, g, gt);
-  printf("[%07.1f ms] pageRankSticdCuda      \n", t); if (all) print(r5);
+  typedef PageRankMode  Mode;
+  typedef PageRankFlags Flags;
+  float t; Flags f;
+  for (int i=0; i<2; i++) {
+    f.skipConverged = true; // i&1 == 1;
+    auto r1 = pageRank(t, g, gt);
+    printf("[%07.1f ms] pageRank\n", t); if (all) print(r1);
+    auto r2 = pageRankCuda(t, g, gt, {Mode::BLOCK, f});
+    printf("[%07.1f ms] pageRankCuda {block}    ", t); cout << stringify(f) << "\n"; if (all) print(r2);
+    auto r3 = pageRankCuda(t, g, gt, {Mode::THREAD, f});
+    printf("[%07.1f ms] pageRankCuda {thread}   ", t); cout << stringify(f) << "\n"; if (all) print(r3);
+    auto r4 = pageRankCuda(t, g, gt, {Mode::SWITCHED, f});
+    printf("[%07.1f ms] pageRankCuda {switched} ", t); cout << stringify(f) << "\n"; if (all) print(r4);
+  }
+  // auto r5 = pageRankSticdCuda(t, g, gt);
+  // printf("[%07.1f ms] pageRankSticdCuda      \n", t); if (all) print(r5);
 }
 
 

@@ -89,7 +89,7 @@ __device__ void absKernelLoop(T *a, int N, int i, int DI) {
 
 
 template <class T>
-__global__ void fillKernel(T *a, int N) {
+__global__ void absKernel(T *a, int N) {
   DEFINE(t, b, B, G);
 
   absKernelLoop(a, N, B*b+t, G*B);
@@ -106,7 +106,7 @@ void absCuda(T *a, int N) {
   TRY( cudaMalloc(&aD, N1) );
   TRY( cudaMemcpy(aD, a, N1, cudaMemcpyHostToDevice) );
 
-  absKernel<<<G, B>>>(aD, N, v);
+  absKernel<<<G, B>>>(aD, N);
   TRY( cudaMemcpy(a, aD, N1, cudaMemcpyDeviceToHost) );
 
   TRY( cudaFree(aD) );
