@@ -152,42 +152,30 @@ __global__ void pageRankFactorKernel(T *a, V *vdata, T p, int N) {
 
 
 template <class T>
-__device__ bool pageRankDoneKernel(T *a, int v, bool f) {
-  return f && a[v] < 0;
-}
-
-
-template <class T>
-__device__ void pageRankSetKernel(T *e, T *a, int v, T E, T r) {
-  a[v] = E && abs(abs(a[v]) - r) < E? -r : r;
-}
-
-
-template <class T>
-__global__ void pageRankBlockKernel(T *e, T *a, T *c, int *vfrom, int *efrom, T c0, T E, bool f, int i, int n) {
+__global__ void pageRankBlockKernel(T *a, T *r, T *c, int *vfrom, int *efrom, T c0, bool f, int i, int n) {
   DEFINE(t, b, B, G);
   __shared__ T cache[BLOCK_DIM];
 
   for (int v=i+b, V=i+n; v<V; v+=G) {
-    if (pageRankDoneKernel(a, v, f)) continue;
+    if (f && a[v] == r[v]) continue;
     int ebgn = vfrom[v];
     int ideg = vfrom[v+1]-vfrom[v];
-    cache[t] = sumAbsAtKernelLoop(c, efrom+ebgn, ideg, t, B);
+    cache[t] = sumAtKernelLoop(c, efrom+ebgn, ideg, t, B);
     sumKernelReduce(cache, B, t);
-    if (t == 0) pageRankSetKernel(a, v, E, c0 + cache[0]);
+    if (t == 0) a[v] = c0 + cache[0];
   }
 }
 
 
 template <class T>
-__global__ void pageRankThreadKernel(T *a, T *c, int *vfrom, int *efrom, T c0, T E, bool f, int i, int n) {
+__global__ void pageRankThreadKernel(T *a, T *r, T *c, int *vfrom, int *efrom, T c0, bool f, int i, int n) {
   DEFINE(t, b, B, G);
 
   for (int v=i+B*b+t, V=i+n; v<V; v+=G*B) {
-    if (pageRankDoneKernel(a, v, f)) continue;
+    if (f && a[v] == r[v]) continue;
     int ebgn = vfrom[v];
     int ideg = vfrom[v+1]-vfrom[v];
-    pageRankSetKernel(a, v, E, c0 + sumAbsAtKernelLoop(c, efrom+ebgn, ideg, 0, 1));
+    a[v] = c0 + sumAtKernelLoop(c, efrom+ebgn, ideg, 0, 1);
   }
 }
 
@@ -198,26 +186,26 @@ __global__ void pageRankThreadKernel(T *a, T *c, int *vfrom, int *efrom, T c0, T
 // -------------------------------
 
 template <class T>
-void pageRankBlockKernelCall(T *a, T *c, int *vfrom, int *efrom, T c0, T E, bool f, int i, int n) {
+void pageRankBlockKernelCall(T *a, T *r, T *c, int *vfrom, int *efrom, T c0, bool f, int i, int n) {
   int B = BLOCK_DIM;
   int G = min(n, GRID_DIM);
-  pageRankBlockKernel<<<G, B>>>(a, c, vfrom, efrom, c0, E, f, i, n);
+  pageRankBlockKernel<<<G, B>>>(a, r, c, vfrom, efrom, c0, f, i, n);
 }
 
 
 template <class T>
-void pageRankThreadKernelCall(T *a, T *c, int *vfrom, int *efrom, T c0, T E, bool f, int i, int n) {
+void pageRankThreadKernelCall(T *a, T *r, T *c, int *vfrom, int *efrom, T c0, bool f, int i, int n) {
   int B = BLOCK_DIM;
   int G = min(ceilDiv(n, B), GRID_DIM);
-  pageRankThreadKernel<<<G, B>>>(a, c, vfrom, efrom, c0, E, f, i, n);
+  pageRankThreadKernel<<<G, B>>>(a, r, c, vfrom, efrom, c0, f, i, n);
 }
 
 
 template <class T, class I>
-void pageRankKernelWave(T *a, T *c, int *vfrom, int *efrom, T c0, T E, bool f, int i, I&& ns) {
+void pageRankKernelWave(T *a, T *r, T *c, int *vfrom, int *efrom, T c0, bool f, int i, I&& ns) {
   for (int n : ns) {
-    if (n > 0) pageRankBlockKernelCall (a, c, vfrom, efrom, c0, E, f, i, n);
-    else       pageRankThreadKernelCall(a, c, vfrom, efrom, c0, E, f, i, -n);
+    if (n > 0) pageRankBlockKernelCall (a, r, c, vfrom, efrom, c0, f, i, n);
+    else       pageRankThreadKernelCall(a, r, c, vfrom, efrom, c0, f, i, -n);
     i += abs(n);
   }
 }
@@ -233,7 +221,7 @@ T pageRankCudaTeleport(T *r0, T *r0D, T *rD, int *vdataD, int i, int n, int N, T
   int B = BLOCK_DIM;
   int G = min(ceilDiv(n, B), GRID_DIM);
   int G1 = G * sizeof(T);
-  sumAbsIfNotKernel<<<G, B>>>(r0D, rD+i, vdataD+i, n);
+  sumIfNotKernel<<<G, B>>>(r0D, rD+i, vdataD+i, n);
   TRY( cudaMemcpy(r0, r0D, G1, cudaMemcpyDeviceToHost) );
   return p*sum(r0, G)/N;
 }
@@ -251,30 +239,28 @@ T* pageRankCudaLoop(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int 
   int G1 = G * sizeof(T);
   int H1 = H * sizeof(T);
   int SKIP = 4;
-  int N1 = N * sizeof(T); // REMOVE
-  vector<T> a(N); // REMOVE
-  printf("N:  %d\n", N); // REMOVE
-  printf("N1: %d\n", N1); // REMOVE
+  // int N1 = N * sizeof(T); // REMOVE
+  // vector<T> a(N); // REMOVE
+  // printf("N:  %d\n", N); // REMOVE
+  // printf("N1: %d\n", N1); // REMOVE
 
   T e0 = T();
   for (int l=0;; l++) {
-    auto EK = fSC? E/N:0;
     bool fK = fSC && (l%SKIP > 0);
-    sumAbsIfNotKernel<<<H, B>>>(r0D,  rD,   vdataD, N);
-    multiplyAbsKernel<<<G, B>>>(cD+i, rD+i, fD+i,   n);
+    sumIfNotKernel<<<H, B>>>(r0D,  rD,   vdataD, N);
+    multiplyKernel<<<G, B>>>(cD+i, rD+i, fD+i,   n);
     TRY( cudaMemcpy(r0, r0D, H1, cudaMemcpyDeviceToHost) );
     T c0 = (1-p)/N + p*sum(r0, G)/N;
-    pageRankKernelWave(aD, cD, vfromD, efromD, c0, EK, fK, i, ns);
-    TRY( cudaMemcpy(a.data(), aD, N1, cudaMemcpyDeviceToHost) ); // REMOVE
-    print(a); // REMOVE
-    absErrorAbsKernel<<<G, B>>>(eD, rD, aD, N);
+    pageRankKernelWave(aD, rD, cD, vfromD, efromD, c0, fK, i, ns);
+    // TRY( cudaMemcpy(a.data(), aD, N1, cudaMemcpyDeviceToHost) ); // REMOVE
+    // print(a); // REMOVE
+    absErrorKernel<<<G, B>>>(eD, rD, aD, N);
     TRY( cudaMemcpy(e, eD, G1, cudaMemcpyDeviceToHost) );
     T e1 = sum(e, G);
     if (e1 < E || e1 == e0) break;
     swap(aD, rD);
     e0 = e1;
   }
-  if (fSC) absKernel<<<G, B>>>(aD, n);
   return aD;
 }
 

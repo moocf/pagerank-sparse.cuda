@@ -24,7 +24,7 @@ void runPageRank(G& g, H& gt, bool all) {
   typedef PageRankFlags Flags;
   float t; Flags f;
   for (int i=0; i<2; i++) {
-    f.skipConverged = true; // i&1 == 1;
+    f.skipConverged = i&1 == 1;
     auto r1 = pageRank(t, g, gt);
     printf("[%07.1f ms] pageRank\n", t); if (all) print(r1);
     auto r2 = pageRankCuda(t, g, gt, {Mode::BLOCK, f});
