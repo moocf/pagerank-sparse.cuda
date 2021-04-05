@@ -28,7 +28,7 @@ auto identicalSiblings(G& xt, vector<K>& vs, int i, set<K>& s) {
 template <class G, class H>
 auto inIdenticals(G& x, H& xt) {
   using K = typename G::TKey;
-  vector<K> a;
+  vector<vector<K>> a;
   vector<K> vs;
   set<K> s;
   auto vis = x.vertexContainer(bool());
