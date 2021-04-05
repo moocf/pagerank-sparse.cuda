@@ -41,7 +41,7 @@ auto inIdenticals(G& x, H& xt) {
 
       auto b = identicalSiblings(xt, vs, i, s);
       if (b.size() > 0) a.push_back(b);
-      vis[vi] = true;
+      vis[vs[i]] = true;
     }
   }
 }
