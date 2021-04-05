@@ -158,13 +158,13 @@ __device__ bool pageRankDoneKernel(T *a, int v, bool f) {
 
 
 template <class T>
-__device__ void pageRankSetKernel(T *a, int v, T E, T r) {
-  a[v]  = E && abs(a[v] - r) < E? -r : r;
+__device__ void pageRankSetKernel(T *e, T *a, int v, T E, T r) {
+  a[v] = E && abs(abs(a[v]) - r) < E? -r : r;
 }
 
 
 template <class T>
-__global__ void pageRankBlockKernel(T *a, T *c, int *vfrom, int *efrom, T c0, T E, bool f, int i, int n) {
+__global__ void pageRankBlockKernel(T *e, T *a, T *c, int *vfrom, int *efrom, T c0, T E, bool f, int i, int n) {
   DEFINE(t, b, B, G);
   __shared__ T cache[BLOCK_DIM];
 
@@ -267,7 +267,7 @@ T* pageRankCudaLoop(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int 
     pageRankKernelWave(aD, cD, vfromD, efromD, c0, EK, fK, i, ns);
     TRY( cudaMemcpy(a.data(), aD, N1, cudaMemcpyDeviceToHost) ); // REMOVE
     print(a); // REMOVE
-    absErrorAbsKernel<<<G, B>>>(eD, rD+i, aD+i, n);
+    absErrorAbsKernel<<<G, B>>>(eD, rD, aD, N);
     TRY( cudaMemcpy(e, eD, G1, cudaMemcpyDeviceToHost) );
     T e1 = sum(e, G);
     if (e1 < E || e1 == e0) break;
