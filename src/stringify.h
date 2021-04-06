@@ -15,6 +15,7 @@ auto stringify(PageRankFlags& x) {
   a += x.removeIdenticals? 'I':' ';
   a += x.removeChains?     'C':' ';
   a += x.skipConverged?    'D':' ';
+  a += x.orderVertices?    'O':' ';
   a += "}";
   return a;
 }

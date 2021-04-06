@@ -42,6 +42,7 @@ enum struct PageRankMode {
 struct PageRankFlags {
   bool splitComponents  = false;
   bool orderComponents  = false;
+  bool orderVertices    = false;
   bool removeIdenticals = false;
   bool removeChains     = false;
   bool skipConverged    = false;
@@ -278,10 +279,10 @@ T* pageRankCudaCore(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int 
 
 
 template <class G>
-auto pageRankVertices(G& x, PageRankMode M) {
+auto pageRankVertices(G& x, PageRankMode M, PageRankFlags f) {
   using K = typename G::TKey;
   typedef PageRankMode Mode;
-  if (M != Mode::SWITCHED) return vertices(x);
+  if (M != Mode::SWITCHED && !f.orderVertices) return vertices(x);
   return verticesBy(x, [&](K u) { return x.degree(u); });
 }
 
@@ -320,7 +321,7 @@ auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>
   auto p = o.damping;
   auto E = o.convergence;
   bool fSC = o.flags.skipConverged;
-  auto ks = pageRankVertices(xt, M);
+  auto ks = pageRankVertices(xt, M, o.flags);
   auto vfrom = sourceOffsets(xt, ks);
   auto efrom = destinationIndices(xt, ks);
   auto vdata = vertexData(xt, ks);  // outDegree
