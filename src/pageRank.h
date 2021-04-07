@@ -283,13 +283,23 @@ T* pageRankCudaCore(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int 
 
 
 
-template <class G>
-auto pageRankVertices(G& x, PageRankMode M, PageRankFlags f) {
+template <class G, class H>
+auto pageRankComponents(G& x, H& xt, PageRankMode M, PageRankFlags F) {
   using K = typename G::TKey;
   typedef PageRankMode Mode;
-  if (M != Mode::SWITCHED && !f.orderVertices) return vertices(x);
-  return verticesBy(x, [&](K u) { return x.degree(u); });
+  vector<vector<K>> cs;
+  if (F.splitComponents) cs = components(x, xt);
+  else cs.push_back(vertices(x));
+  if (F.orderVertices || M == Mode::SWITCHED) for (auto& c : cs)
+    sort(c.begin(), c.end(), [&](K u, K v) { return xt.degree(u) < xt.degree(v); });
+  if (F.orderComponents) {
+    auto b = blockgraph(x, cs);
+    auto bks = sort(b);
+    reorder(cs, bks);
+  }
+  return cs;
 }
+
 
 template <class G, class K>
 int pageRankSwitchPoint(G& x, vector<K>& ks, PageRankMode M) {
@@ -301,6 +311,7 @@ int pageRankSwitchPoint(G& x, vector<K>& ks, PageRankMode M) {
   });
   return it - ks.begin();
 }
+
 
 template <class G, class K>
 auto pageRankWaves(G& x, vector<K>& ks, PageRankMode M) {
@@ -323,10 +334,12 @@ template <class G, class H, class T=float>
 auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
   using K = typename G::TKey;
   auto M = o.mode;
+  auto F = o.flags;
   auto p = o.damping;
   auto E = o.convergence;
-  bool fSC = o.flags.skipConverged;
-  auto ks = pageRankVertices(xt, M, o.flags);
+  bool fSC = F.skipConverged;
+  auto cs = pageRankComponents(x, xt, M, F);
+  auto ks = join(cs);
   auto vfrom = sourceOffsets(xt, ks);
   auto efrom = destinationIndices(xt, ks);
   auto vdata = vertexData(xt, ks);  // outDegree
