@@ -497,7 +497,9 @@ const char* testPageRank() {
   float t, E = 1e-5;
   Flags f;
 
-  for (int o=0; o<4; o++) {
+  for (int o=0; o<16; o++) {
+    f.splitComponents = o&8;
+    f.orderComponents = o&4;
     f.skipConverged = o&2;
     f.orderVertices = o&1;
     auto p1 = pageRankPush(t, g, gt);
