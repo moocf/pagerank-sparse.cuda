@@ -23,11 +23,12 @@ void runPageRank(G& g, H& gt, bool all) {
   typedef PageRankMode  Mode;
   typedef PageRankFlags Flags;
   float t; Flags f;
-  for (int o=0; o<16; o++) {
-    f.splitComponents = o&8;
-    f.orderComponents = o&4;
-    f.skipConverged = o&2;
-    f.orderVertices = o&1;
+  for (int o=0; o<32; o++) {
+    f.splitComponents = o & 16;
+    f.largeComponents = o & 8;
+    f.orderVertices   = o & 4;
+    f.orderComponents = o & 2;
+    f.skipConverged   = o & 1;
     auto r1 = pageRank(t, g, gt);
     printf("[%07.1f ms] [%.4e] pageRank              \n", t, absError(r1, r1)); if (all) print(r1);
     auto r2 = pageRankCuda(t, g, gt, {Mode::BLOCK, f});

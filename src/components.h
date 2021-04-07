@@ -10,7 +10,7 @@ using std::vector;
 
 // Finds Strongly Connected Components (SCC) using Kosaraju's algorithm.
 template <class G, class H>
-auto components(G& x, H& y) {
+auto components(G& x, H& xt, int n0=0) {
   using K = typename G::TKey;
   // original dfs
   auto vis = x.vertexContainer(bool());
@@ -24,8 +24,9 @@ auto components(G& x, H& y) {
     K u = vs.back();
     vs.pop_back();
     if (vis[u]) continue;
-    a.push_back(vector<K>());
-    dfsLoop(y, u, vis, a.back());
+    if (a.empty() || !n0 || n0 && a.back().size() >= n0)
+      a.push_back(vector<K>());
+    dfsLoop(xt, u, vis, a.back());
   }
   return a;
 }

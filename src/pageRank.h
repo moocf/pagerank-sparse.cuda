@@ -9,6 +9,7 @@
 #include "_cuda.h"
 #include "ceilDiv.h"
 #include "measure.h"
+#include "sgn.h"
 #include "abs.h"
 #include "sum.h"
 #include "fill.h"
@@ -46,6 +47,7 @@ enum struct PageRankMode {
 
 struct PageRankFlags {
   bool splitComponents  = false;
+  bool largeComponents  = false;
   bool orderComponents  = false;
   bool orderVertices    = false;
   bool removeIdenticals = false;
@@ -288,7 +290,8 @@ auto pageRankComponents(G& x, H& xt, PageRankMode M, PageRankFlags F) {
   using K = typename G::TKey;
   typedef PageRankMode Mode;
   vector<vector<K>> cs;
-  if (F.splitComponents) cs = components(x, xt);
+  int n0 = F.largeComponents? GRID_DIM * BLOCK_DIM : 0;
+  if (F.splitComponents) cs = components(x, xt, n0);
   else cs.push_back(vertices(x));
   if (F.orderVertices || M == Mode::SWITCHED) for (auto& c : cs)
     sort(c.begin(), c.end(), [&](K u, K v) { return xt.degree(u) < xt.degree(v); });
@@ -311,26 +314,38 @@ int pageRankSwitchPoint(G& xt, vector<K>& ks) {
 }
 
 
+template <class C>
+void pageRankAddStep(C& a, int n) {
+  if (a.empty() || sgn(a.back()) != sgn(n)) a.push_back(n);
+  else a.back() += n;
+}
+
 template <class G, class K, class C>
-void pageRankWave(C& a, G& xt, vector<K>& ks, PageRankMode M) {
+void pageRankStep(C& a, G& xt, vector<K>& ks, PageRankMode M) {
   typedef PageRankMode Mode;
   int n = ks.size();
   switch (M) {
-    case Mode::BLOCK:  a.push_back(n);  break;
-    case Mode::THREAD: a.push_back(-n); break;
+    case Mode::BLOCK:  pageRankAddStep(a, n);  break;
+    case Mode::THREAD: pageRankAddStep(a, -n); break;
     case Mode::SWITCHED:
       int s = pageRankSwitchPoint(xt, ks);
-      a.push_back(-s);
-      a.push_back(n-s);
+      if (s)   pageRankAddStep(a, -s);
+      if (n-s) pageRankAddStep(a, n-s);
   }
+}
+
+template <class G, class K>
+auto pageRankStep(G& xt, vector<K>& ks, PageRankMode M) {
+  vector<int> a; pageRankStep(a, xt, ks, M);
+  return a;
 }
 
 
 template <class G, class K>
-auto pageRankWaves(G& xt, vector<vector<K>>& cs, PageRankMode M) {
+auto pageRankWave(G& xt, vector<vector<K>>& cs, PageRankMode M) {
   vector<int> a;
   for (auto& c : cs)
-    pageRankWave(a, xt, c, M);
+    pageRankStep(a, xt, c, M);
   return a;
 }
 
@@ -344,8 +359,13 @@ auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>
   auto E = o.convergence;
   bool fSC = F.skipConverged;
   auto cs = pageRankComponents(x, xt, M, F);
-  auto ns = pageRankWaves(xt, cs, M);
+  auto ns = pageRankWave(xt, cs, M);
   auto ks = join(cs);
+  // printf("x: ");  print(x);  // REMOVE
+  // printf("xt: "); print(xt); // REMOVE
+  // printf("cs: "); print(cs); // REMOVE
+  // printf("ns: "); print(ns); // REMOVE
+  // printf("ks: "); print(ks); // REMOVE
   auto vfrom = sourceOffsets(xt, ks);
   auto efrom = destinationIndices(xt, ks);
   auto vdata = vertexData(xt, ks);  // outDegree

@@ -48,6 +48,15 @@ void print(T *x, int R, int C) {
   cout << "}\n";
 }
 
+template <class T>
+void print(vector<vector<T>>& x) {
+  cout << "{\n";
+  for (auto& xi : x) {
+    cout << "  "; print(xi);
+  }
+  cout << "}\n";
+}
+
 
 
 
