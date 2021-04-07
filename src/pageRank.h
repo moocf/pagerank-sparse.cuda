@@ -14,11 +14,16 @@
 #include "fill.h"
 #include "multiply.h"
 #include "error.h"
+#include "reorder.h"
+#include "join.h"
 #include "vertices.h"
 #include "sourceOffsets.h"
 #include "destinationIndices.h"
 #include "vertexData.h"
 #include "vertexContainer.h"
+#include "components.h"
+#include "blockgraph.h"
+#include "sort.h"
 #include "print.h"
 
 using std::vector;
