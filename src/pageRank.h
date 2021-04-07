@@ -302,12 +302,10 @@ auto pageRankComponents(G& x, H& xt, PageRankMode M, PageRankFlags F) {
 
 
 template <class G, class K>
-int pageRankSwitchPoint(G& x, vector<K>& ks, PageRankMode M) {
-  typedef PageRankMode Mode;
-  if (M != Mode::SWITCHED) return 0;
+int pageRankSwitchPoint(G& xt, vector<K>& ks) {
   int deg = int(0.5 * BLOCK_DIM);
   auto it = lower_bound(ks.begin(), ks.end(), deg, [&](K u, int d) {
-    return x.degree(u) < d;
+    return xt.degree(u) < d;
   });
   return it - ks.begin();
 }
@@ -322,7 +320,7 @@ auto pageRankWaves(G& x, vector<K>& ks, PageRankMode M) {
     case Mode::BLOCK:  a.push_back(N);  break;
     case Mode::THREAD: a.push_back(-N); break;
     case Mode::SWITCHED:
-      int S = pageRankSwitchPoint(x, ks, M);
+      int S = pageRankSwitchPoint(x, ks);
       a.push_back(-S);
       a.push_back(N-S);
   }
