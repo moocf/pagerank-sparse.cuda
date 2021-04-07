@@ -311,19 +311,26 @@ int pageRankSwitchPoint(G& xt, vector<K>& ks) {
 }
 
 
-template <class G, class K>
-auto pageRankWaves(G& x, vector<K>& ks, PageRankMode M) {
+template <class G, class K, class C>
+void pageRankWave(C& a, G& xt, vector<K>& ks, PageRankMode M) {
   typedef PageRankMode Mode;
-  vector<int> a;
-  int N = x.order();
+  int n = ks.size();
   switch (M) {
-    case Mode::BLOCK:  a.push_back(N);  break;
-    case Mode::THREAD: a.push_back(-N); break;
+    case Mode::BLOCK:  a.push_back(n);  break;
+    case Mode::THREAD: a.push_back(-n); break;
     case Mode::SWITCHED:
-      int S = pageRankSwitchPoint(x, ks);
-      a.push_back(-S);
-      a.push_back(N-S);
+      int s = pageRankSwitchPoint(xt, ks);
+      a.push_back(-s);
+      a.push_back(n-s);
   }
+}
+
+
+template <class G, class K>
+auto pageRankWaves(G& xt, vector<vector<K>>& cs, PageRankMode M) {
+  vector<int> a;
+  for (auto& c : cs)
+    pageRankWave(a, xt, c, M);
   return a;
 }
 
@@ -337,11 +344,11 @@ auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>
   auto E = o.convergence;
   bool fSC = F.skipConverged;
   auto cs = pageRankComponents(x, xt, M, F);
+  auto ns = pageRankWaves(xt, cs, M);
   auto ks = join(cs);
   auto vfrom = sourceOffsets(xt, ks);
   auto efrom = destinationIndices(xt, ks);
   auto vdata = vertexData(xt, ks);  // outDegree
-  auto ns = pageRankWaves(xt, ks, M);
   int N = xt.order();
   int B = BLOCK_DIM;
   int g = min(ceilDiv(N, B), GRID_DIM);
