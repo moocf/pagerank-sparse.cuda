@@ -22,21 +22,22 @@ template <class G, class H>
 void runPageRank(G& g, H& gt, bool all) {
   typedef PageRankMode  Mode;
   typedef PageRankFlags Flags;
-  float t; Flags f;
+  float t; Flags F;
   for (int o=0; o<32; o++) {
-    f.splitComponents = o & 16;
-    f.largeComponents = o & 8;
-    f.orderVertices   = o & 4;
-    f.orderComponents = o & 2;
-    f.skipConverged   = o & 1;
+    F.splitComponents = o & 16;
+    F.largeComponents = o & 8;
+    F.orderVertices   = o & 4;
+    F.orderComponents = o & 2;
+    F.skipConverged   = o & 1;
+    if (isSilly(F)) continue;
     auto r1 = pageRank(t, g, gt);
     printf("[%07.1f ms] [%.4e] pageRank              \n", t, absError(r1, r1)); if (all) print(r1);
-    auto r2 = pageRankCuda(t, g, gt, {Mode::BLOCK, f});
-    printf("[%07.1f ms] [%.4e] pageRankCuda {block}    ", t, absError(r1, r2)); cout << stringify(f) << "\n"; if (all) print(r2);
-    auto r3 = pageRankCuda(t, g, gt, {Mode::THREAD, f});
-    printf("[%07.1f ms] [%.4e] pageRankCuda {thread}   ", t, absError(r1, r3)); cout << stringify(f) << "\n"; if (all) print(r3);
-    auto r4 = pageRankCuda(t, g, gt, {Mode::SWITCHED, f});
-    printf("[%07.1f ms] [%.4e] pageRankCuda {switched} ", t, absError(r1, r4)); cout << stringify(f) << "\n"; if (all) print(r4);
+    auto r2 = pageRankCuda(t, g, gt, {Mode::BLOCK, F});
+    printf("[%07.1f ms] [%.4e] pageRankCuda {block}    ", t, absError(r1, r2)); cout << stringify(F) << "\n"; if (all) print(r2);
+    auto r3 = pageRankCuda(t, g, gt, {Mode::THREAD, F});
+    printf("[%07.1f ms] [%.4e] pageRankCuda {thread}   ", t, absError(r1, r3)); cout << stringify(F) << "\n"; if (all) print(r3);
+    auto r4 = pageRankCuda(t, g, gt, {Mode::SWITCHED, F});
+    printf("[%07.1f ms] [%.4e] pageRankCuda {switched} ", t, absError(r1, r4)); cout << stringify(F) << "\n"; if (all) print(r4);
   }
   // auto r5 = pageRankSticdCuda(t, g, gt);
   // printf("[%07.1f ms] pageRankSticdCuda      \n", t); if (all) print(r5);

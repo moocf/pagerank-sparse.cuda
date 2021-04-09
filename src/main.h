@@ -12,6 +12,7 @@
 #include "print.h"
 #include "stringify.h"
 #include "measure.h"
+#include "silly.h"
 #include "fill.h"
 #include "copy.h"
 #include "add.h"
