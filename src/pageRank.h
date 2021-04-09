@@ -224,67 +224,6 @@ void pageRankKernelWave(T *a, T *r, T *c, int *vfrom, int *efrom, T c0, bool f, 
 // PAGE-RANK HELPERS (CUDA)
 // ------------------------
 
-template <class T>
-T pageRankCudaTeleport(T *r0, T *r0D, T *rD, int *vdataD, int i, int n, int N, T p) {
-  int B = BLOCK_DIM;
-  int G = min(ceilDiv(n, B), GRID_DIM);
-  int G1 = G * sizeof(T);
-  sumIfNotKernel<<<G, B>>>(r0D, rD+i, vdataD+i, n);
-  TRY( cudaMemcpy(r0, r0D, G1, cudaMemcpyDeviceToHost) );
-  return p*sum(r0, G)/N;
-}
-
-
-
-
-// PAGE-RANK (CUDA)
-
-template <class T, class I>
-T* pageRankCudaLoop(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int *vfromD, int *efromD, int *vdataD, int i, I&& ns, int n, int N, T p, T E, bool fSC) {
-  int B = BLOCK_DIM;
-  int G = min(ceilDiv(n, B), GRID_DIM);
-  int H = min(ceilDiv(N, B), GRID_DIM);
-  int G1 = G * sizeof(T);
-  int H1 = H * sizeof(T);
-  int SKIP = 4;
-  // int N1 = N * sizeof(T); // REMOVE
-  // vector<T> a(N); // REMOVE
-  // printf("N:  %d\n", N); // REMOVE
-  // printf("N1: %d\n", N1); // REMOVE
-
-  T e0 = T();
-  for (int l=0;; l++) {
-    bool fK = fSC && (l%SKIP > 0);
-    sumIfNotKernel<<<H, B>>>(r0D,  rD,   vdataD, N);
-    multiplyKernel<<<G, B>>>(cD+i, rD+i, fD+i,   n);
-    TRY( cudaMemcpy(r0, r0D, H1, cudaMemcpyDeviceToHost) );
-    T c0 = (1-p)/N + p*sum(r0, G)/N;
-    pageRankKernelWave(aD, rD, cD, vfromD, efromD, c0, fK, i, ns);
-    // TRY( cudaMemcpy(a.data(), aD, N1, cudaMemcpyDeviceToHost) ); // REMOVE
-    // print(a); // REMOVE
-    absErrorKernel<<<G, B>>>(eD, rD, aD, N);
-    TRY( cudaMemcpy(e, eD, G1, cudaMemcpyDeviceToHost) );
-    T e1 = sum(e, G);
-    if (e1 < E || e1 == e0) break;
-    swap(aD, rD);
-    e0 = e1;
-  }
-  return aD;
-}
-
-
-template <class T, class I>
-T* pageRankCudaCore(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int *vfromD, int *efromD, int *vdataD, I&& ns, int N, T p, T E, bool fSC) {
-  int B = BLOCK_DIM;
-  int G = min(ceilDiv(N, B), GRID_DIM);
-  fillKernel<<<G, B>>>(rD, N, T(1)/N);
-  pageRankFactorKernel<<<G, B>>>(fD, vdataD, p, N);
-  return pageRankCudaLoop(e, r0, eD, r0D, aD, cD, rD, fD, vfromD, efromD, vdataD, 0, ns, N, N, p, E, fSC);
-}
-
-
-
-
 template <class G, class H>
 auto pageRankComponents(G& x, H& xt, PageRankMode M, PageRankFlags F) {
   using K = typename G::TKey;
@@ -350,6 +289,47 @@ auto pageRankWave(G& xt, vector<vector<K>>& cs, PageRankMode M) {
 }
 
 
+
+
+// PAGE-RANK (CUDA)
+
+template <class T, class I>
+T* pageRankCudaLoop(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int *vfromD, int *efromD, int *vdataD, int i, I&& ns, int n, int N, T p, T E, bool fSC) {
+  int B = BLOCK_DIM;
+  int G = min(ceilDiv(n, B), GRID_DIM);
+  int H = min(ceilDiv(N, B), GRID_DIM);
+  int G1 = G * sizeof(T);
+  int H1 = H * sizeof(T);
+  int SKIP = 4;
+  T e0 = T();
+  for (int l=0;; l++) {
+    bool fK = fSC && (l%SKIP > 0);
+    sumIfNotKernel<<<H, B>>>(r0D,  rD,   vdataD, N);
+    multiplyKernel<<<G, B>>>(cD+i, rD+i, fD+i,   n);
+    TRY( cudaMemcpy(r0, r0D, H1, cudaMemcpyDeviceToHost) );
+    T c0 = (1-p)/N + p*sum(r0, G)/N;
+    pageRankKernelWave(aD, rD, cD, vfromD, efromD, c0, fK, i, ns);
+    absErrorKernel<<<G, B>>>(eD, rD, aD, N);
+    TRY( cudaMemcpy(e, eD, G1, cudaMemcpyDeviceToHost) );
+    T e1 = sum(e, G);
+    if (e1 < E || e1 == e0) break;
+    swap(aD, rD);
+    e0 = e1;
+  }
+  return aD;
+}
+
+
+template <class T, class I>
+T* pageRankCudaCore(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int *vfromD, int *efromD, int *vdataD, I&& ns, int N, T p, T E, bool fSC) {
+  int B = BLOCK_DIM;
+  int G = min(ceilDiv(N, B), GRID_DIM);
+  fillKernel<<<G, B>>>(rD, N, T(1)/N);
+  pageRankFactorKernel<<<G, B>>>(fD, vdataD, p, N);
+  return pageRankCudaLoop(e, r0, eD, r0D, aD, cD, rD, fD, vfromD, efromD, vdataD, 0, ns, N, N, p, E, fSC);
+}
+
+
 template <class G, class H, class T=float>
 auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
   using K = typename G::TKey;
@@ -361,11 +341,6 @@ auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>
   auto cs = pageRankComponents(x, xt, M, F);
   auto ns = pageRankWave(xt, cs, M);
   auto ks = join(cs);
-  // printf("x: ");  print(x);  // REMOVE
-  // printf("xt: "); print(xt); // REMOVE
-  // printf("cs: "); print(cs); // REMOVE
-  // printf("ns: "); print(ns); // REMOVE
-  // printf("ks: "); print(ks); // REMOVE
   auto vfrom = sourceOffsets(xt, ks);
   auto efrom = destinationIndices(xt, ks);
   auto vdata = vertexData(xt, ks);  // outDegree
