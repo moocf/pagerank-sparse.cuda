@@ -27,4 +27,4 @@
 #include "sort.h"
 #include "pageRank.h"
 #include "pageRankPush.h"
-#include "pageRankSticd.h"
+#include "pageRankStepped.h"
