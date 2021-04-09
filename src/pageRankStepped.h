@@ -1,122 +1,106 @@
 #pragma once
-#include "DiGraphView.h"
+#include <vector>
+#include <algorithm>
+#include <utility>
+#include <omp.h>
+#include "_cuda.h"
+#include "ceilDiv.h"
+#include "measure.h"
+#include "sum.h"
+#include "fill.h"
+#include "error.h"
 #include "join.h"
-#include "transform.h"
-#include "transpose.h"
+#include "vertices.h"
+#include "sourceOffsets.h"
+#include "destinationIndices.h"
+#include "vertexData.h"
+#include "vertexContainer.h"
 #include "components.h"
 #include "blockgraph.h"
 #include "sort.h"
-#include "subgraph.h"
 #include "pageRank.h"
+#include "print.h"
 
 
 
 
-template <class G, class C, class T>
-auto& pageRankSticdLoop(C& a, C& r, C& f, C& c, G& xs, T p, T E) {
-  for (auto& x : xs)
-    pageRankCore(a, r, f, c, x, p, E);
+// PAGE-RANK STEPPED HELPERS (CUDA)
+// --------------------------------
+
+template <class G, class K>
+auto pageRankWaves(G& xt, vector<vector<K>>& cs, PageRankMode M) {
+  vector<vector<int>> a;
+  for (auto& c : cs)
+    a.push_back(pageRankStep(xt, c, M));
   return a;
 }
 
-template <class G, class C, class T>
-auto& pageRankSticdCore(C& a, C& r, C& f, C& c, G& x, G& xs, T p, T E) {
-  int N = x.order();
-  fillAt(r, x.vertices(), T(1)/N);
-  pageRankFactor(f, xs, p);
-  return pageRankSticdLoop(a, r, f, c, xs, p, E);
-}
-
-
-template <class G, class H, class T>
-auto pageRankSticd(float& t, G& x, H& y, T p, T E) {
-  // using G = decltype(x.vertexContainer(T()));
-  auto cs  = components(x, y);
-  auto b   = blockgraph(x, cs);
-  auto bks = sort(b);
-  vector<DiGraphView<H>> ys;
-  // for (int i : bks)
-  //   ys.push_back(subgraph(y, cs[i]));
-  auto a = x.vertexContainer(T());
-  // auto r = x.vertexContainer(T());
-  // auto f = x.vertexContainer(T());
-  // auto c = x.vertexContainer(T());
-  // t = measureDuration([&]() { pageRankSticdCore(a, r, f, c, y, ys, p, E); });
-  return a;
-}
-
-template <class G, class H, class T=float>
-auto pageRankSticd(float& t, G& x, H& y, PageRankOptions<T> o=PageRankOptions<T>()) {
-  return pageRankSticd(t, x, y, o.damping, o.convergence);
-}
 
 
 
-template <class T>
-T* pageRankSticdCudaStep(int G, int B, T *e, T *r0, T *eD, T *r0D, T *aD, T *fD, T *rD, T *cD, int *vfromD, int *efromD, int *vdataD, int N, vector<int>& CS, PageRankMode M, T p, T E, int S) {
-  int i = 0;
-  for (auto C : CS) {
-    T *bD = pageRankCudaLoop(G, B, e, r0, eD, r0D, aD, fD, rD, cD, vfromD, efromD, vdataD, N, i, C, M, p, E, S);
+// PAGE-RANK STEPPED (CUDA)
+
+template <class T, class I>
+T* pageRankSteppedCudaStep(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int *vfromD, int *efromD, int *vdataD, int i, I&& ls, int n, int N, T p, T E, bool fSC) {
+  for (auto ns : ls) {
+    int n = sumAbs(ns);
+    T *bD = pageRankCudaLoop(e, r0, eD, r0D, aD, cD, rD, fD, vfromD, efromD, vdataD, i, ns, n, N, p, E, fSC);
     if (bD != rD) swap(aD, rD);
-    i += C;
+    i += n;
   }
   return rD;
 }
 
-template <class T>
-T* pageRankSticdCudaLoop(int G, int B, T *e, T *r0, T *eD, T *r0D, T *aD, T *fD, T *rD, T *cD, int *vfromD, int *efromD, int *vdataD, int N, vector<int>& CS, PageRankMode M, T p, T E, int S) {
-  // T e0 = 0;
+
+template <class T, class I>
+T* pageRankSteppedCudaLoop(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int *vfromD, int *efromD, int *vdataD, int i, I&& ls, int n, int N, T p, T E, bool fSC, int d0) {
+  int B = BLOCK_DIM;
+  int G = min(ceilDiv(N, B), GRID_DIM);
   int G1 = G * sizeof(T);
-  for (int z=0; z<25; z++) {
-    T *bD = pageRankSticdCudaStep(G, B, e, r0, eD, r0D, aD, fD, rD, cD, vfromD, efromD, vdataD, N, CS, M, p, E, S);
+  T e0 = 0;
+  while (1) {
+    T *bD = pageRankSticdCudaStep(e, r0, eD, r0D, aD, cD, rD, fD, vfromD, efromD, vdataD, i, ls, n, N, p, E, fSC);
     if (bD != rD) swap(aD, rD);
+    if (d0 == 0) break;
     absErrorKernel<<<G, B>>>(eD, rD, aD, N);
     TRY( cudaMemcpy(e, eD, G1, cudaMemcpyDeviceToHost) );
     T e1 = sum(e, G);
-    // printf("e1: %.23f, E: %.23f\n", e1, E);
-    // if (e1 < E || e1 == e0) break;
-    // e0 = e1;
+    if (e1 < E || e1 == e0) break;
+    e0 = e1;
   }
   return rD;
 }
 
-template <class T>
-T* pageRankSticdCudaCore(T *e, T *r0, T *eD, T *r0D, T *aD, T *fD, T *rD, T *cD, int *vfromD, int *efromD, int *vdataD, int N, vector<int>& CS, PageRankMode M, T p, T E, int S) {
+
+template <class T, class I>
+T* pageRankSteppedCudaCore(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int *vfromD, int *efromD, int *vdataD, I&& ls, int N, T p, T E, bool fSC) {
   int B = BLOCK_DIM;
   int G = min(ceilDiv(N, B), GRID_DIM);
-  pageRankFactorKernel<<<G, B>>>(fD, vdataD, p, N);
   fillKernel<<<G, B>>>(rD, N, T(1)/N);
-  return pageRankSticdCudaLoop(G, B, e, r0, eD, r0D, aD, fD, rD, cD, vfromD, efromD, vdataD, N, CS, M, p, E, S);
+  pageRankFactorKernel<<<G, B>>>(fD, vdataD, p, N);
+  return pageRankSteppedCudaStep(e, r0, eD, r0D, aD, cD, rD, fD, vfromD, efromD, vdataD, 0, ls, N, N, p, E, fSC);
 }
 
 
-
-
-template <class G, class H, class T>
-auto pageRankSticdCuda(float& t, G& x, H& y, PageRankMode M, T p, T E) {
+template <class G, class H, class T=float>
+auto pageRankSteppedCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
   using K = typename G::TKey;
-  auto cs  = components(x, y);
-  auto b   = blockgraph(x, cs);
-  auto bks = sort(b);
-  auto ks  = joinFrom(cs, bks);
-  vector<int> CS  = transformFrom(cs, bks, [](auto& c) { return (int) c.size(); });
-  auto vfrom = sourceOffsets(y, ks);
-  auto efrom = destinationIndices(y, ks);
-  auto vdata = vertexData(y, ks);  // outDegree
-  // printf("x: "); print(x, true);
-  // printf("y: "); print(y, true);
-  // printf("cs: \n");
-  // for (auto& c : cs)
-  //   print(c);
-  // printf("b: "); print(b, true);
-  // printf("bks: "); print(bks);
-  // printf("ks: "); print(ks);
-  // printf("CS: "); print(CS);
-  // printf("vdata: "); print(vdata);
-  // printf("vfrom: "); print(vfrom);
-  int N = x.order(), S = 0;
-  int B = BLOCK_DIM;
-  int g = min(ceilDiv(N, B), GRID_DIM);
+  auto M = o.mode;
+  auto F = o.flags;
+  auto p = o.damping;
+  auto E = o.convergence;
+  bool fSC = F.skipConverged;
+  F.splitComponents = true;
+  F.orderComponents = true;
+  F.largeComponents = true;
+  auto cs = pageRankComponents(x, xt, M, F);
+  auto ls = pageRankWaves(xt, cs, M);
+  auto ks = join(cs);
+  auto vfrom = sourceOffsets(xt, ks);
+  auto efrom = destinationIndices(xt, ks);
+  auto vdata = vertexData(xt, ks);  // outDegree
+  int N = xt.order();
+  int g = GRID_DIM;
   int VFROM1 = vfrom.size() * sizeof(int);
   int EFROM1 = efrom.size() * sizeof(int);
   int VDATA1 = vdata.size() * sizeof(int);
@@ -149,7 +133,7 @@ auto pageRankSticdCuda(float& t, G& x, H& y, PageRankMode M, T p, T E) {
   TRY( cudaMemcpyAsync(vdataD, vdata.data(), VDATA1, cudaMemcpyHostToDevice, s1) );
   TRY( cudaStreamSynchronize(s1) );
 
-  t = measureDuration([&]() { bD = pageRankSticdCudaCore(e, r0, eD, r0D, aD, fD, rD, cD, vfromD, efromD, vdataD, N, CS, M, p, E, S); });
+  t = measureDuration([&]() { bD = pageRankSteppedCudaCore(e, r0, eD, r0D, aD, cD, rD, fD, vfromD, efromD, vdataD, ls, N, p, E, fSC); });
   TRY( cudaMemcpy(a.data(), bD, N1, cudaMemcpyDeviceToHost) );
 
   TRY( cudaFree(eD) );
@@ -167,10 +151,5 @@ auto pageRankSticdCuda(float& t, G& x, H& y, PageRankMode M, T p, T E) {
   TRY( cudaStreamDestroy(s2) );
   TRY( cudaStreamDestroy(s3) );
   TRY( cudaProfilerStop() );
-  return vertexContainer(x, a, ks);
-}
-
-template <class G, class H, class T=float>
-auto pageRankSticdCuda(float& t, G& x, H& y, PageRankOptions<T> o=PageRankOptions<T>()) {
-  return pageRankSticdCuda(t, x, y, o.mode, o.damping, o.convergence);
+  return vertexContainer(xt, a, ks);
 }

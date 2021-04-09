@@ -502,7 +502,7 @@ const char* testPageRank() {
     F.orderVertices   = o & 4;
     F.orderComponents = o & 2;
     F.skipConverged   = o & 1;
-    if (isSilly(F)) continue;
+    if (!isValid(F)) continue;
     auto p1 = pageRankPush(t, g, gt);
     auto p2 = pageRank(t, g, gt);
     auto p3 = pageRankCuda(t, g, gt, {Mode::BLOCK, F});

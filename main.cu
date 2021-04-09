@@ -29,7 +29,7 @@ void runPageRank(G& g, H& gt, bool all) {
     F.orderVertices   = o & 4;
     F.orderComponents = o & 2;
     F.skipConverged   = o & 1;
-    if (isSilly(F)) continue;
+    if (!isValid(F)) continue;
     auto r1 = pageRank(t, g, gt);
     printf("[%07.1f ms] [%.4e] pageRank              \n", t, absError(r1, r1)); if (all) print(r1);
     auto r2 = pageRankCuda(t, g, gt, {Mode::BLOCK, F});
@@ -38,9 +38,14 @@ void runPageRank(G& g, H& gt, bool all) {
     printf("[%07.1f ms] [%.4e] pageRankCuda {thread}   ", t, absError(r1, r3)); cout << stringify(F) << "\n"; if (all) print(r3);
     auto r4 = pageRankCuda(t, g, gt, {Mode::SWITCHED, F});
     printf("[%07.1f ms] [%.4e] pageRankCuda {switched} ", t, absError(r1, r4)); cout << stringify(F) << "\n"; if (all) print(r4);
+    if (!isValidStepped(F)) continue;
+    auto r5 = pageRankSteppedCuda(t, g, gt, {Mode::BLOCK, F});
+    printf("[%07.1f ms] [%.4e] pageRankSteppedCuda {block}    ", t, absError(r1, r5)); cout << stringify(F) << "\n"; if (all) print(r5);
+    auto r6 = pageRankSteppedCuda(t, g, gt, {Mode::THREAD, F});
+    printf("[%07.1f ms] [%.4e] pageRankSteppedCuda {thread}   ", t, absError(r1, r6)); cout << stringify(F) << "\n"; if (all) print(r6);
+    auto r7 = pageRankSteppedCuda(t, g, gt, {Mode::SWITCHED, F});
+    printf("[%07.1f ms] [%.4e] pageRankSteppedCuda {switched} ", t, absError(r1, r7)); cout << stringify(F) << "\n"; if (all) print(r7);
   }
-  // auto r5 = pageRankSticdCuda(t, g, gt);
-  // printf("[%07.1f ms] pageRankSticdCuda      \n", t); if (all) print(r5);
 }
 
 
