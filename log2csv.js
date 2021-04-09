@@ -70,6 +70,13 @@ function parseReference(rs) {
 }
 
 
+function logKey(fn, mode, flags) {
+  if (fn === 'pageRank') return 'cpu';
+  if (fn === 'pageRankCuda') return `${mode} {${flags.trim()}}`;
+  return `s-${mode} {${flags.trim()}}`;
+}
+
+
 function parseLog(m, pth) {
   var d = readFile(pth);
   var ls = d.split(/\n/g).map(l => l.trim());
@@ -81,8 +88,8 @@ function parseLog(m, pth) {
     }
     else if (RRESULT.test(l)) {
       var [, time, err, fn, mode, flags] = l.match(RRESULT);
-      var k = fn === 'pageRank'? 'cpu' : `${mode} {${flags.trim()}}`;
-      var t = parseFloat(time), e   = parseFloat(err);
+      var k = logKey(fn, mode, flags);
+      var t = parseFloat(time), e = parseFloat(err);
       var s = t/r.nvgraph, sve = s * (r.vertices + r.edges);
       r[`${k} time`]  = t;
       r[`${k} error`] = e;
