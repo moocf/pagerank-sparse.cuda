@@ -430,6 +430,27 @@ const char* testSort() {
 }
 
 
+const char* testChains() {
+  vector<vector<int>> a {{1, 2, 3, 4}, {1, 5, 6, 7}, {8, 9}};
+  DiGraph<> g;
+  g.addEdge(1, 2);
+  g.addEdge(1, 5);
+  g.addEdge(2, 3);
+  g.addEdge(3, 4);
+  g.addEdge(5, 6);
+  g.addEdge(6, 7);
+  g.addEdge(4, 8);
+  g.addEdge(7, 8);
+  g.addEdge(8, 9);
+  g.addEdge(9, 1);
+  auto gt = transpose(g);
+
+  auto p = chains(g, gt);
+  if (p != a) return "chains";
+  return NULL;
+}
+
+
 const char* testPageRank() {
   typedef PageRankMode  Mode;
   typedef PageRankFlags Flags;
@@ -579,6 +600,7 @@ void testAll() {
     testDfs(),
     testComponents(),
     testSort(),
+    testChains(),
     testPageRank()
   };
   int n = 0;
