@@ -207,7 +207,7 @@ auto pageRankVertexRoot(vector<K>& ks, vector<vector<K>>& ch, vector<vector<K>>&
 
 
 template <class K>
-auto pageRankChainLevel(vector<K>& ks, vector<vector<K>>& ch) {
+auto pageRankVertexDistance(vector<K>& ks, vector<vector<K>>& ch) {
   vector<int> a(ks.size());
   auto is = indexMapFrom(ks);
   for (auto& vs : ch) {
@@ -437,6 +437,8 @@ auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>
   auto vfrom = sourceOffsets(xt, ks);
   auto efrom = destinationIndices(xt, ks);
   auto vdata = vertexData(xt, ks);  // outDegree
+  auto vroot = pageRankVertexRoot(ks, ch, id);
+  auto vdist = pageRankVertexDistance(ks, ch);
   int N = xt.order();
   int g = GRID_DIM;
   int VFROM1 = vfrom.size() * sizeof(int);
