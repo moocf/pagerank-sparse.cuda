@@ -224,6 +224,13 @@ auto pageRankWave(G& xt, vector<vector<K>>& cs, PageRankMode M) {
 // PAGE-RANK KERNELS (CUDA)
 // ------------------------
 
+template <class T>
+__device__ T pageRankKernelCalculate(T r, int d, T c0, T p) {
+  T pd = pow(p, d);
+  return ((1-pd)/(1-p)) * c0 + pd * r;
+}
+
+
 template <class T, class V>
 __global__ void pageRankFactorKernel(T *a, V *vdata, T p, int N) {
   DEFINE(t, b, B, G);
