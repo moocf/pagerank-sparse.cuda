@@ -219,6 +219,15 @@ auto pageRankChainLevel(vector<K>& ks, vector<vector<K>>& ch) {
 }
 
 
+void pageRankFuseSpecial(vector<int>& vfrom, vector<int>& vdata, vector<int>& vroot, vector<int>& vlevl) {
+  for (int i=0, I=vfrom.size(); i<I; i++) {
+    if (vroot[i] < 0) continue;
+    vfrom[i] = ~vroot[i];
+    if (vlevl[i] > 0) vdata[i] = ~vdata[i];
+  }
+}
+
+
 template <class G, class K>
 int pageRankSwitchPoint(G& xt, vector<K>& ks) {
   int deg = int(0.5 * BLOCK_DIM);
