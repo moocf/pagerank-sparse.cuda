@@ -219,12 +219,9 @@ auto pageRankChainLevel(vector<K>& ks, vector<vector<K>>& ch) {
 }
 
 
-void pageRankFuseSpecial(vector<int>& vfrom, vector<int>& vdata, vector<int>& vroot, vector<int>& vlevl) {
-  for (int i=0, I=vfrom.size(); i<I; i++) {
-    if (vroot[i] < 0) continue;
-    vfrom[i] = ~vroot[i];
-    if (vlevl[i] > 0) vdata[i] = ~vdata[i];
-  }
+void pageRankMarkSpecial(vector<int>& a, vector<int>& vroot) {
+  for (int i=0, I=vroot.size(); i<I; i++)
+    if (vroot[i] >= 0) a[i] = -a[i];
 }
 
 
