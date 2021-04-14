@@ -191,16 +191,16 @@ template <class K>
 auto pageRankVertexRoot(vector<K>& ks, vector<vector<K>>& ch, vector<vector<K>>& id) {
   vector<int> a(ks.size());
   fill(a, -1);
-  auto km = mapFrom(ks);
+  auto is = indexMapFrom(ks);
   for (auto& vs : id) {
     auto u = vs[0];
     for (auto v : slice(vs, 1))
-      a[km[v]] = km[u];
+      a[is[v]] = is[u];
   }
   for (auto& vs : ch) {
     auto u = vs[0];
     for (auto v : slice(vs, 1))
-      a[km[v]] = km[u];
+      a[is[v]] = is[u];
   }
   return a;
 }
@@ -209,11 +209,11 @@ auto pageRankVertexRoot(vector<K>& ks, vector<vector<K>>& ch, vector<vector<K>>&
 template <class K>
 auto pageRankVertexDistance(vector<K>& ks, vector<vector<K>>& ch) {
   vector<int> a(ks.size());
-  auto km = mapFrom(ks);
+  auto is = indexMapFrom(ks);
   for (auto& vs : ch) {
     auto u = vs[0]; int i = 0;
     for (auto v : slice(vs, 1))
-      a[km[v]] = ++i;
+      a[is[v]] = ++i;
   }
   return a;
 }
