@@ -309,9 +309,9 @@ __device__ int pageRankKernelChainLevel(int *vdata, int v) {
 template <class T>
 __global__ void pageRankFactorKernel(T *a, int *vdata, T p, int N) {
   DEFINE(t, b, B, G);
-  for (int i=B*b+t, DI=G*B; i<N; i+=DI) {
-    int d = pageRankKernelVertexDegree(vdata, i);
-    a[i] = d>0? p/d : 0;
+  for (int v=B*b+t, DV=G*B; v<N; v+=DV) {
+    int d = pageRankKernelVertexDegree(vdata, v);
+    a[v] = d>0? p/d : 0;
   }
 }
 
