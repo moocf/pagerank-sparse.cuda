@@ -173,6 +173,25 @@ auto pageRankComponents(G& x, H& xt, PageRankMode M, PageRankFlags F) {
 }
 
 
+template <class K>
+auto pageRankVertexRoot(vector<K>& ks, vector<vector<K>>& ch, vector<vector<K>>& id) {
+  vector<int> a(ks.size());
+  fill(a, -1);
+  auto km = mapFrom(ks);
+  for (auto& vs : id) {
+    auto u = vs[0];
+    for (auto v : slice(vs, 1))
+      a[km[v]] = km[u];
+  }
+  for (auto& vs : ch) {
+    auto u = vs[0];
+    for (auto v : slice(vs, 1))
+      a[km[v]] = km[u];
+  }
+  return a;
+}
+
+
 template <class G, class K>
 int pageRankSwitchPoint(G& xt, vector<K>& ks) {
   int deg = int(0.5 * BLOCK_DIM);
