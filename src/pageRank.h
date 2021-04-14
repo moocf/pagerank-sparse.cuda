@@ -271,12 +271,6 @@ auto pageRankWave(G& xt, vector<vector<K>>& cs, PageRankMode M) {
 // ------------------------
 
 template <class T>
-__device__ T pageRankKernelCalculate(T r, int d, T c0, T p) {
-  T pd = pow(p, d);
-  return ((1-pd)/(1-p)) * c0 + pd * r;
-}
-
-template <class T>
 __device__ bool pageRankKernelIsConverged(T *a, T *r, bool fSC, int v) {
   return fSC && a[v] == r[v];
 }
@@ -303,6 +297,12 @@ __device__ int pageRankKernelVertexDegree(int *vdata, int v) {
 
 __device__ int pageRankKernelChainLevel(int *vdata, int v) {
   return ~vdata[v];
+}
+
+template <class T>
+__device__ T pageRankKernelChainRank(int *vdata, T r, T c0, T p, int v) {
+  int l = pageRankKernelChainLevel(vdata, v); T pl = pow(p, l);
+  return ((1-pl)/(1-p)) * c0 + pl * r;
 }
 
 
