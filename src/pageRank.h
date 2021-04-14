@@ -439,6 +439,7 @@ auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>
   auto vdata = vertexData(xt, ks);  // outDegree
   auto vroot = pageRankVertexRoot(ks, ch, id);
   auto vdist = pageRankVertexDistance(ks, ch);
+  pageRankMarkSpecial(vfrom, vroot);
   int N = xt.order();
   int g = GRID_DIM;
   int VFROM1 = vfrom.size() * sizeof(int);
