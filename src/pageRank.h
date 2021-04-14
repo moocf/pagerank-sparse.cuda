@@ -288,30 +288,10 @@ __device__ bool pageRankKernelIsVertexSpecial(int *vfrom, int v) {
   return vfrom[v] < 0;
 }
 
-__device__ bool pageRankKernelIsVertexIdentical(int *vdata, int v) {
-  return vdata[v] >= 0;
-}
-
-__device__ bool pageRankKernelIsVertexChain(int *vdata, int v) {
-  return vdata[v] < 0;
-}
-
-__device__ int pageRankKernelVertexRoot(int *vfrom, int v) {
-  return ~vfrom[v];
-}
-
-__device__ int pageRankKernelVertexDegree(int *vdata, int v) {
-  return vdata[v] >= 0? vdata[v] : 1;
-}
-
-__device__ int pageRankKernelChainLevel(int *vdata, int v) {
-  return ~vdata[v];
-}
-
 template <class T>
-__device__ T pageRankKernelChainRank(int *vdata, T r, T c0, T p, int v) {
-  int l = pageRankKernelChainLevel(vdata, v); T pl = pow(p, l);
-  return ((1-pl)/(1-p)) * c0 + pl * r;
+__device__ T pageRankKernelCalculate(T r, int d, T c0, T p) {
+  T pd = pow(p, d);
+  return ((1-pd)/(1-p)) * c0 + pd * r;
 }
 
 
@@ -326,13 +306,11 @@ __global__ void pageRankFactorKernel(T *a, int *vdata, T p, int N) {
 
 
 template <class T>
-__global__ void pageRankSpecialKernel(T *a, T *r, int *vfrom, int *vdata, T c0, T p, int i, int n) {
+__global__ void pageRankSpecialKernel(T *a, T *r, int *vroot, int *vdist, T c0, T p, int i, int n) {
   DEFINE(t, b, B, G);
   for (int v=i+B*b+t, V=i+n, DV=G*B; v<V; v+=DV) {
-    if (!pageRankKernelIsVertexSpecial(vfrom, v)) continue;
-    int u = pageRankKernelVertexRoot(vfrom, v);
-    if (pageRankKernelIsVertexIdentical(vdata, v)) a[v] = r[u];
-    else a[v] = pageRankKernelChainRank(vdata, r[u], c0, p, v);
+    if (pageRankKernelIsVertexSpecial(vroot, v)) continue;
+    a[v] = pageRankKernelCalculate(r[vroot[v]], vdist[v], c0, p);
   }
 }
 
