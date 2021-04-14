@@ -37,6 +37,21 @@ const char* testCeilDiv() {
 }
 
 
+const char* testFrom() {
+  vector<vector<int>> x {{1, 2, 3}, {4, 5, 6}};
+  auto p = setFrom(x, 1);
+  if (!(
+    p.count(1) == 0 &&
+    p.count(4) == 0 &&
+    p.count(2) == 1 &&
+    p.count(3) == 1 &&
+    p.count(5) == 1 &&
+    p.count(6) == 1
+  )) return "setFrom";
+  return NULL;
+}
+
+
 const char* testErase() {
   vector<int> a {0, 1, 2, 3};
   vector<int> b {0, 1, 2, 3};
@@ -606,6 +621,7 @@ const char* testPageRank() {
 void testAll() {
   vector<const char*> ts = {
     testCeilDiv(),
+    testFrom(),
     testErase(),
     testInsert(),
     testFilter(),
