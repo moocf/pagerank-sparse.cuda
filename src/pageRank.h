@@ -317,6 +317,18 @@ __global__ void pageRankFactorKernel(T *a, int *vdata, T p, int N) {
 
 
 template <class T>
+__global__ void pageRankSpecialKernel(T *a, T *r, int *vfrom, int *vdata, T c0, T p, int N) {
+  DEFINE(t, b, B, G);
+  for (int v=B*b+t, DV=G*B; v<N; v+=DV) {
+    if (!pageRankKernelIsVertexSpecial(vfrom, v)) continue;
+    int u = pageRankKernelVertexRoot(vfrom, v);
+    if (pageRankKernelIsVertexIdentical(vdata, v)) a[v] = r[u];
+    else a[v] = pageRankKernelChainRank(vdata, r[u], c0, p, v);
+  }
+}
+
+
+template <class T>
 __global__ void pageRankBlockKernel(T *a, T *r, T *c, int *vfrom, int *efrom, T c0, bool fSC, int i, int n) {
   DEFINE(t, b, B, G);
   __shared__ T cache[BLOCK_DIM];
