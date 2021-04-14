@@ -24,6 +24,26 @@ auto setFrom(I&& x) {
 }
 
 
+template<class T>
+auto setFrom(vector<vector<T>>& x, int i=0) {
+  set<T> a;
+  for (auto& vs : x)
+    a.insert(vs.begin()+i, vs.end());
+  return a;
+}
+
+
+
+
+template <class T>
+auto indexMapFrom(vector<T>& x) {
+  unordered_map<T, int> a;
+  for (int i=0, I=x.size(); i<I; i++)
+    a[x[i]] = i;
+  return a;
+}
+
+
 
 
 template <class I, class C>
