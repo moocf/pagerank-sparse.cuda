@@ -285,6 +285,10 @@ __device__ bool pageRankKernelIsVertexSpecial(int *vfrom, int v) {
   return vfrom[v] < 0;
 }
 
+__device__ bool pageRankKernelIsVertexIdentical(int *vdata, int v) {
+  return vdata[v] >= 0;
+}
+
 __device__ int pageRankKernelVertexRoot(int *vfrom, int v) {
   return ~vfrom[v];
 }
