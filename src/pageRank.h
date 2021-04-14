@@ -154,16 +154,30 @@ auto pageRank(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) 
 // PAGE-RANK HELPERS
 // -----------------
 
-template <class G, class H>
-auto pageRankComponents(G& x, H& xt, PageRankMode M, PageRankFlags F) {
-  using K = typename G::TKey;
+template <class G, class K, class C>
+void pageRankSortComponents(C& a, G& xt, vector<vector<K>>& ch, vector<vector<K>>& id) {
+  auto chs = setFrom(ch, 1);
+  auto ids = setFrom(id, 1);
+  for (auto& c : a) {
+    sort(c.begin(), c.end(), [&](K u, K v) {
+      if (ids.count(u)) return true;
+      if (ids.count(v)) return false;
+      if (chs.count(u)) return true;
+      if (chs.count(v)) return false;
+      return xt.degree(u) < xt.degree(v);
+    });
+  }
+}
+
+
+template <class G, class H, class K>
+auto pageRankComponents(G& x, H& xt, vector<vector<K>>& ch, vector<vector<K>>& id, PageRankMode M, PageRankFlags F) {
   typedef PageRankMode Mode;
   vector<vector<K>> cs;
   int n0 = F.largeComponents? GRID_DIM * BLOCK_DIM : 0;
   if (F.splitComponents) cs = components(x, xt, n0);
   else cs.push_back(vertices(x));
-  if (F.orderVertices || M == Mode::SWITCHED) for (auto& c : cs)
-    sort(c.begin(), c.end(), [&](K u, K v) { return xt.degree(u) < xt.degree(v); });
+  if (F.orderVertices || M == Mode::SWITCHED) pageRankSortComponents(cs, xt, ch, id);
   if (F.orderComponents) {
     auto b = blockgraph(x, cs);
     auto bks = sort(b);
@@ -385,7 +399,9 @@ auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>
   F.removeChains = true;
   F.skipConverged = true;
   bool fSC = F.skipConverged;
-  auto cs = pageRankComponents(x, xt, M, F);
+  auto ch = vector<vector<K>>();
+  auto id = vector<vector<K>>();
+  auto cs = pageRankComponents(x, xt, ch, id, M, F);
   auto ns = pageRankWave(xt, cs, M);
   auto ks = join(cs);
   auto vfrom = sourceOffsets(xt, ks);
