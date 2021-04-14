@@ -345,8 +345,8 @@ __global__ void pageRankBlockKernel(T *a, T *r, T *c, int *vfrom, int *efrom, T 
   for (int v=i+b, V=i+n; v<V; v+=G) {
     if (pageRankKernelIsConverged(a, r, fSC, v)) continue;
     if (pageRankKernelIsVertexSpecial(vfrom, v)) continue;
-    int ebgn = vfrom[v];
-    int ideg = vfrom[v+1]-vfrom[v];
+    int ebgn = abs(vfrom[v]);
+    int ideg = abs(vfrom[v+1])-abs(vfrom[v]);
     cache[t] = sumAtKernelLoop(c, efrom+ebgn, ideg, t, B);
     sumKernelReduce(cache, B, t);
     if (t == 0) a[v] = c0 + cache[0];
@@ -361,8 +361,8 @@ __global__ void pageRankThreadKernel(T *a, T *r, T *c, int *vfrom, int *efrom, T
   for (int v=i+B*b+t, V=i+n; v<V; v+=G*B) {
     if (pageRankKernelIsConverged(a, r, fSC, v)) continue;
     if (pageRankKernelIsVertexSpecial(vfrom, v)) continue;
-    int ebgn = vfrom[v];
-    int ideg = vfrom[v+1]-vfrom[v];
+    int ebgn = abs(vfrom[v]);
+    int ideg = abs(vfrom[v+1])-abs(vfrom[v]);
     a[v] = c0 + sumAtKernelLoop(c, efrom+ebgn, ideg, 0, 1);
   }
 }
