@@ -289,12 +289,16 @@ __device__ int pageRankKernelVertexRoot(int *vfrom, int v) {
   return ~vfrom[v];
 }
 
+__device__ int pageRankKernelVertexDegree(int *vdata, int v) {
+  return vdata[v] >= 0? vdata[v] : 1;
+}
 
-template <class T, class V>
-__global__ void pageRankFactorKernel(T *a, V *vdata, T p, int N) {
+
+template <class T>
+__global__ void pageRankFactorKernel(T *a, int *vdata, T p, int N) {
   DEFINE(t, b, B, G);
   for (int i=B*b+t, DI=G*B; i<N; i+=DI) {
-    V d = vdata[i];
+    int d = pageRankKernelVertexDegree(vdata, i);
     a[i] = d>0? p/d : 0;
   }
 }
