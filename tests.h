@@ -430,6 +430,30 @@ const char* testSort() {
 }
 
 
+const char* testIdenticals() {
+  vector<vector<int>> a {{4, 5}, {7, 8}};
+  DiGraph<> g;
+  g.addEdge(1, 4);
+  g.addEdge(1, 5);
+  g.addEdge(2, 4);
+  g.addEdge(2, 5);
+  g.addEdge(3, 4);
+  g.addEdge(3, 5);
+  g.addEdge(3, 6);
+  g.addEdge(4, 7);
+  g.addEdge(4, 8);
+  g.addEdge(5, 7);
+  g.addEdge(5, 8);
+  g.addEdge(7, 1);
+  g.addEdge(8, 3);
+  auto gt = transpose(g);
+
+  auto p = inIdenticals(g, gt);
+  if (p != a) return "inIdenticals";
+  return NULL;
+}
+
+
 const char* testChains() {
   vector<vector<int>> a {{1, 2, 3, 4}, {1, 5, 6, 7}, {8, 9}};
   DiGraph<> g;
@@ -600,6 +624,7 @@ void testAll() {
     testDfs(),
     testComponents(),
     testSort(),
+    testIdenticals(),
     testChains(),
     testPageRank()
   };
