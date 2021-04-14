@@ -192,6 +192,19 @@ auto pageRankVertexRoot(vector<K>& ks, vector<vector<K>>& ch, vector<vector<K>>&
 }
 
 
+template <class K>
+auto pageRankVertexDistance(vector<K>& ks, vector<vector<K>>& ch) {
+  vector<int> a(ks.size());
+  auto km = mapFrom(ks);
+  for (auto& vs : ch) {
+    auto u = vs[0]; int i = 0;
+    for (auto v : slice(vs, 1))
+      a[km[v]] = ++i;
+  }
+  return a;
+}
+
+
 template <class G, class K>
 int pageRankSwitchPoint(G& xt, vector<K>& ks) {
   int deg = int(0.5 * BLOCK_DIM);
