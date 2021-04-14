@@ -12,6 +12,8 @@
 #include "sgn.h"
 #include "abs.h"
 #include "sum.h"
+#include "from.h"
+#include "slice.h"
 #include "fill.h"
 #include "multiply.h"
 #include "error.h"
@@ -25,12 +27,15 @@
 #include "components.h"
 #include "blockgraph.h"
 #include "sort.h"
+#include "chains.h"
+#include "identicals.h"
 #include "print.h"
 
 using std::vector;
 using std::unordered_map;
 using std::lower_bound;
 using std::swap;
+using std::pow;
 using std::min;
 using std::abs;
 
