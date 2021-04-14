@@ -276,6 +276,11 @@ __device__ T pageRankKernelCalculate(T r, int d, T c0, T p) {
   return ((1-pd)/(1-p)) * c0 + pd * r;
 }
 
+template <class T>
+__device__ bool pageRankKernelIsConverged(T *a, T *r, bool fSC, int v) {
+  return fSC && a[v] == r[v];
+}
+
 
 template <class T, class V>
 __global__ void pageRankFactorKernel(T *a, V *vdata, T p, int N) {
@@ -293,7 +298,7 @@ __global__ void pageRankBlockKernel(T *a, T *r, T *c, int *vfrom, int *efrom, T 
   __shared__ T cache[BLOCK_DIM];
 
   for (int v=i+b, V=i+n; v<V; v+=G) {
-    if (fSC && a[v] == r[v]) continue;
+    if (pageRankKernelIsConverged(a, r, fSC, v)) continue;
     int ebgn = vfrom[v];
     int ideg = vfrom[v+1]-vfrom[v];
     cache[t] = sumAtKernelLoop(c, efrom+ebgn, ideg, t, B);
@@ -308,7 +313,7 @@ __global__ void pageRankThreadKernel(T *a, T *r, T *c, int *vfrom, int *efrom, T
   DEFINE(t, b, B, G);
 
   for (int v=i+B*b+t, V=i+n; v<V; v+=G*B) {
-    if (fSC && a[v] == r[v]) continue;
+    if (pageRankKernelIsConverged(a, r, fSC, v)) continue;
     int ebgn = vfrom[v];
     int ideg = vfrom[v+1]-vfrom[v];
     a[v] = c0 + sumAtKernelLoop(c, efrom+ebgn, ideg, 0, 1);
