@@ -319,7 +319,7 @@ template <class T>
 __global__ void pageRankFactorKernel(T *a, int *vdata, T p, int N) {
   DEFINE(t, b, B, G);
   for (int v=B*b+t, DV=G*B; v<N; v+=DV) {
-    int d = pageRankKernelVertexDegree(vdata, v);
+    int d = vdata[v];
     a[v] = d>0? p/d : 0;
   }
 }
