@@ -146,6 +146,76 @@ auto pageRank(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) 
 
 
 
+// PAGE-RANK HELPERS
+// -----------------
+
+template <class G, class H>
+auto pageRankComponents(G& x, H& xt, PageRankMode M, PageRankFlags F) {
+  using K = typename G::TKey;
+  typedef PageRankMode Mode;
+  vector<vector<K>> cs;
+  int n0 = F.largeComponents? GRID_DIM * BLOCK_DIM : 0;
+  if (F.splitComponents) cs = components(x, xt, n0);
+  else cs.push_back(vertices(x));
+  if (F.orderVertices || M == Mode::SWITCHED) for (auto& c : cs)
+    sort(c.begin(), c.end(), [&](K u, K v) { return xt.degree(u) < xt.degree(v); });
+  if (F.orderComponents) {
+    auto b = blockgraph(x, cs);
+    auto bks = sort(b);
+    reorder(cs, bks);
+  }
+  return cs;
+}
+
+
+template <class G, class K>
+int pageRankSwitchPoint(G& xt, vector<K>& ks) {
+  int deg = int(0.5 * BLOCK_DIM);
+  auto it = lower_bound(ks.begin(), ks.end(), deg, [&](K u, int d) {
+    return xt.degree(u) < d;
+  });
+  return it - ks.begin();
+}
+
+
+template <class C>
+void pageRankAddStep(C& a, int n) {
+  if (a.empty() || sgn(a.back()) != sgn(n)) a.push_back(n);
+  else a.back() += n;
+}
+
+template <class G, class K, class C>
+void pageRankStep(C& a, G& xt, vector<K>& ks, PageRankMode M) {
+  typedef PageRankMode Mode;
+  int n = ks.size();
+  switch (M) {
+    case Mode::BLOCK:  pageRankAddStep(a, n);  break;
+    case Mode::THREAD: pageRankAddStep(a, -n); break;
+    case Mode::SWITCHED:
+      int s = pageRankSwitchPoint(xt, ks);
+      if (s)   pageRankAddStep(a, -s);
+      if (n-s) pageRankAddStep(a, n-s);
+  }
+}
+
+template <class G, class K>
+auto pageRankStep(G& xt, vector<K>& ks, PageRankMode M) {
+  vector<int> a; pageRankStep(a, xt, ks, M);
+  return a;
+}
+
+
+template <class G, class K>
+auto pageRankWave(G& xt, vector<vector<K>>& cs, PageRankMode M) {
+  vector<int> a;
+  for (auto& c : cs)
+    pageRankStep(a, xt, c, M);
+  return a;
+}
+
+
+
+
 // PAGE-RANK KERNELS (CUDA)
 // ------------------------
 
@@ -216,76 +286,6 @@ void pageRankKernelWave(T *a, T *r, T *c, int *vfrom, int *efrom, T c0, bool f, 
     else       pageRankThreadKernelCall(a, r, c, vfrom, efrom, c0, f, i, -n);
     i += abs(n);
   }
-}
-
-
-
-
-// PAGE-RANK HELPERS (CUDA)
-// ------------------------
-
-template <class G, class H>
-auto pageRankComponents(G& x, H& xt, PageRankMode M, PageRankFlags F) {
-  using K = typename G::TKey;
-  typedef PageRankMode Mode;
-  vector<vector<K>> cs;
-  int n0 = F.largeComponents? GRID_DIM * BLOCK_DIM : 0;
-  if (F.splitComponents) cs = components(x, xt, n0);
-  else cs.push_back(vertices(x));
-  if (F.orderVertices || M == Mode::SWITCHED) for (auto& c : cs)
-    sort(c.begin(), c.end(), [&](K u, K v) { return xt.degree(u) < xt.degree(v); });
-  if (F.orderComponents) {
-    auto b = blockgraph(x, cs);
-    auto bks = sort(b);
-    reorder(cs, bks);
-  }
-  return cs;
-}
-
-
-template <class G, class K>
-int pageRankSwitchPoint(G& xt, vector<K>& ks) {
-  int deg = int(0.5 * BLOCK_DIM);
-  auto it = lower_bound(ks.begin(), ks.end(), deg, [&](K u, int d) {
-    return xt.degree(u) < d;
-  });
-  return it - ks.begin();
-}
-
-
-template <class C>
-void pageRankAddStep(C& a, int n) {
-  if (a.empty() || sgn(a.back()) != sgn(n)) a.push_back(n);
-  else a.back() += n;
-}
-
-template <class G, class K, class C>
-void pageRankStep(C& a, G& xt, vector<K>& ks, PageRankMode M) {
-  typedef PageRankMode Mode;
-  int n = ks.size();
-  switch (M) {
-    case Mode::BLOCK:  pageRankAddStep(a, n);  break;
-    case Mode::THREAD: pageRankAddStep(a, -n); break;
-    case Mode::SWITCHED:
-      int s = pageRankSwitchPoint(xt, ks);
-      if (s)   pageRankAddStep(a, -s);
-      if (n-s) pageRankAddStep(a, n-s);
-  }
-}
-
-template <class G, class K>
-auto pageRankStep(G& xt, vector<K>& ks, PageRankMode M) {
-  vector<int> a; pageRankStep(a, xt, ks, M);
-  return a;
-}
-
-
-template <class G, class K>
-auto pageRankWave(G& xt, vector<vector<K>>& cs, PageRankMode M) {
-  vector<int> a;
-  for (auto& c : cs)
-    pageRankStep(a, xt, c, M);
-  return a;
 }
 
 
