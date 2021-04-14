@@ -301,6 +301,10 @@ __device__ int pageRankKernelVertexDegree(int *vdata, int v) {
   return vdata[v] >= 0? vdata[v] : 1;
 }
 
+__device__ int pageRankKernelChainLevel(int *vdata, int v) {
+  return ~vdata[v];
+}
+
 
 template <class T>
 __global__ void pageRankFactorKernel(T *a, int *vdata, T p, int N) {
