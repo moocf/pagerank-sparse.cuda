@@ -207,7 +207,7 @@ auto pageRankVertexRoot(vector<K>& ks, vector<vector<K>>& ch, vector<vector<K>>&
 
 
 template <class K>
-auto pageRankVertexDistance(vector<K>& ks, vector<vector<K>>& ch) {
+auto pageRankChainLevel(vector<K>& ks, vector<vector<K>>& ch) {
   vector<int> a(ks.size());
   auto is = indexMapFrom(ks);
   for (auto& vs : ch) {
