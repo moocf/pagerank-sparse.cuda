@@ -281,9 +281,12 @@ __device__ bool pageRankKernelIsConverged(T *a, T *r, bool fSC, int v) {
   return fSC && a[v] == r[v];
 }
 
-template <class T>
-__device__ bool pageRankKernelIsVertexSpecial(T *vfrom, int v) {
+__device__ bool pageRankKernelIsVertexSpecial(int *vfrom, int v) {
   return vfrom[v] < 0;
+}
+
+__device__ int pageRankKernelVertexRoot(int *vfrom, int v) {
+  return ~vfrom[v];
 }
 
 
