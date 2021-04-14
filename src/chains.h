@@ -1,33 +1,47 @@
 #pragma once
 #include <vector>
+#include "edges.h"
 
 using std::vector;
 
 
 
 
-template <class G, class K, class C>
-auto chainAt(G& x, K u, C& vis) {
+template <class G, class H, class K>
+auto chainRoot(G& x, H& xt, K u) {
+  while (x.degree(u) == 1 && xt.degree(u) == 1)
+    u = edge(xt, u);
+  return u;
+}
+
+
+template <class G, class H, class K, class C>
+auto chainAt(G& x, H& xt, K u, C& vis) {
   vector<K> a;
-  while (!vis[u]) {
+  while (x.degree(u) == 1 && xt.degree(u) == 1) {
     vis[u] = true;
-    if (x.degree(u) != 1) break;
     a.push_back(u);
-    for (auto v : x.edges(u))
-      u = v;
+    u = edge(x, u);
   }
   return a;
 }
 
 
-template <class G>
-auto chains(G& x) {
+template <class G, class H>
+auto chains(G& x, H& xt) {
   using K = typename G::TKey;
   vector<vector<K>> a;
   auto vis = x.vertexContainer(bool());
   for (auto u : x.vertices()) {
-    auto b = chainAt(x, u, vis);
-    if (b.size() > 0) a.push_back(b);
+    u = chainRoot(x, xt, u);
+    if (vis[u]) continue;
+    vis[u] = true;
+    for (auto v : x.edges(u)) {
+      auto b = chainAt(x, xt, v, vis);
+      if (b.size() == 0) continue;
+      b.insert(b.begin(), u);
+      a.push_back(b);
+    }
   }
   return a;
 }
