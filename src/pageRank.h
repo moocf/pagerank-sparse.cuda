@@ -419,7 +419,7 @@ T* pageRankCudaLoop(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int 
     TRY( cudaMemcpy(r0, r0D, H1, cudaMemcpyDeviceToHost) );
     T c0 = (1-p)/N + p*sum(r0, G)/N;
     pageRankKernelWave(aD, rD, cD, vfromD, efromD, c0, fSC1, i, ns);
-    if (fRI || fRC) pageRankSpecialKernel<<<G, B>>>(aD, rD, vfromD, vdataD, c0, p, i, n);
+    // if (fRI || fRC) pageRankSpecialKernel<<<G, B>>>(aD, rD, vfromD, vdataD, c0, p, i, n);
     absErrorKernel<<<G, B>>>(eD, rD, aD, N);
     TRY( cudaMemcpy(e, eD, G1, cudaMemcpyDeviceToHost) );
     T e1 = sum(e, G);
