@@ -427,8 +427,8 @@ auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>
   F.removeChains = true;
   F.skipConverged = true;
   bool fSC = F.skipConverged;
-  // bool fRI = F.removeIdenticals;
-  // bool fRC = F.removeChains;
+  bool fRI = F.removeIdenticals;
+  bool fRC = F.removeChains;
   auto ch = vector<vector<K>>();
   auto id = vector<vector<K>>();
   auto cs = pageRankComponents(x, xt, ch, id, M, F);
@@ -445,13 +445,16 @@ auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>
   int VFROM1 = vfrom.size() * sizeof(int);
   int EFROM1 = efrom.size() * sizeof(int);
   int VDATA1 = vdata.size() * sizeof(int);
+  int VROOT1 = vroot.size() * sizeof(int);
+  int VDIST1 = vdist.size() * sizeof(int);
   int G1 = g * sizeof(T);
   int N1 = N * sizeof(T);
   vector<T> a(N);
 
   T *e,  *r0;
   T *eD, *r0D, *fD, *rD, *cD, *aD, *bD;
-  int *vfromD, *efromD, *vdataD, *vrootD = NULL, *vdistD = NULL;
+  int *vfromD, *efromD, *vdataD;
+  int *vrootD = NULL, *vdistD = NULL;
   cudaStream_t s1, s2, s3;
   TRY( cudaProfilerStart() );
   TRY( cudaStreamCreate(&s1) );
@@ -469,9 +472,13 @@ auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>
   TRY( cudaMalloc(&vfromD, VFROM1) );
   TRY( cudaMalloc(&efromD, EFROM1) );
   TRY( cudaMalloc(&vdataD, VDATA1) );
+  if (fRI || fRC) TRY( cudaMalloc(&vrootD, VROOT1) );
+  if (fRI || fRC) TRY( cudaMalloc(&vdistD, VDIST1) );
   TRY( cudaMemcpyAsync(vfromD, vfrom.data(), VFROM1, cudaMemcpyHostToDevice, s1) );
   TRY( cudaMemcpyAsync(efromD, efrom.data(), EFROM1, cudaMemcpyHostToDevice, s1) );
   TRY( cudaMemcpyAsync(vdataD, vdata.data(), VDATA1, cudaMemcpyHostToDevice, s1) );
+  if (fRI || fRC) TRY( cudaMemcpyAsync(vrootD, vroot.data(), VROOT1, cudaMemcpyHostToDevice, s1) );
+  if (fRI || fRC) TRY( cudaMemcpyAsync(vdistD, vdist.data(), VDIST1, cudaMemcpyHostToDevice, s1) );
   TRY( cudaStreamSynchronize(s1) );
 
   t = measureDuration([&]() { bD = pageRankCudaCore(e, r0, eD, r0D, aD, cD, rD, fD, vfromD, efromD, vdataD, vrootD, vdistD, ns, N, p, E, fSC); });
