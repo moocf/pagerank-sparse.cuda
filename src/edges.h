@@ -7,6 +7,14 @@ using std::vector;
 
 
 template <class G, class K>
+auto edge(G& x, K u) {
+  for (K v : x.edges(u))
+    return v;
+  return K();
+}
+
+
+template <class G, class K>
 auto edges(G& x, K u) {
   vector<K> a;
   for (auto v : x.edges(u))
