@@ -3,9 +3,8 @@ const os = require('os');
 const path = require('path');
 
 const RGRAPH  = /Loading\s+graph\s+(\S+\/([^\/]*?).mtx)\s+\.\.\./;
+const RORDER = /^order:\s*(\d+)\s+size:\s*(\d+)/;
 const RRESULT = /\[(\S*)\s+ms\]\s+\[(\S*)\]\s+(\S*)(?:\s+\{(\S*)\}\s+\{(.*)\})?/;
-
-var KEYS = new Set();
 
 
 
@@ -58,19 +57,15 @@ function writeCsv(pth, rs, cs) {
 function parseReference(rs) {
   var a = new Map();
   for (var r of rs) {
-    var name       = r.name;
-    var vertices   = parseInt(r.vertices, 10);
-    var edges      = parseInt(r.edges, 10);
-    var components = parseInt(r.components, 10);
-    var levels     = parseInt(r.levels, 10);
-    var nvgraph    = parseInt(r.nvgraph, 10);
-    a.set(name, {name, vertices, edges, components, levels, nvgraph});
+    var name = r.name;
+    var time_nvgraph = parseInt(r.time_nvgraph, 10);
+    a.set(name, {name, time_nvgraph});
   }
   return a;
 }
 
 
-function logKey(fn, mode, flags) {
+function resultConfig(fn, mode, flags) {
   if (fn === 'pageRank') return 'cpu';
   if (fn === 'pageRankCuda') return `${mode} {${flags.trim()}}`;
   return `s-${mode} {${flags.trim()}}`;
@@ -80,71 +75,51 @@ function logKey(fn, mode, flags) {
 function parseLog(m, pth) {
   var d = readFile(pth);
   var ls = d.split(/\n/g).map(l => l.trim());
-  var r = null;
+  var g = null, r = null;
+  var a = new Map();
   for (var l of ls) {
     if (RGRAPH.test(l)) {
       var [,, name] = l.match(RGRAPH);
-      r = m.get(name);
+      g = m.get(name);
+    }
+    else if (RORDER.test(l)) {
+      var [, order, size] = l.match(RORDER);
+      g.order = parseFloat(order);
+      g.size  = parseFloat(size);
     }
     else if (RRESULT.test(l)) {
-      var [, time, err, fn, mode, flags] = l.match(RRESULT);
-      var k = logKey(fn, mode, flags);
-      var t = parseFloat(time), e = parseFloat(err);
-      var s = t/r.nvgraph, sve = s * (r.vertices + r.edges);
-      r[`${k} time`]  = t;
-      r[`${k} error`] = e;
-      r[`${k} speedup (this/nvgraph)`] = s;
-      r[`${k} speedup * (V+E)`]        = sve;
-      KEYS.add(k);
+      var [, time, error, fn, mode, flags] = l.match(RRESULT);
+      r.graph    = g.name;
+      r.config   = resultConfig(fn, mode, flags);
+      r.error    = parseFloat(error);
+      r.time     = parseFloat(time);
+      r.speedup  = r.time/g.time_nvgraph;
+      r.speedupf = r.speedup * (g.order * g.size);
+      if (!a.has(r.graph)) a.set(r.graph, []);
+      a.get(r.graph).push(r);
     }
   }
-  return m;
-}
-
-
-function bestKey(r) {
-  var l = null;
-  for (var k of KEYS)
-    if (!l || r[`${k} time`] < r[`${l} time`]) l = k;
-  return l;
+  return a;
 }
 
 
 function postProcess(m) {
-  for (var r of m.values()) {
-    var k = bestKey(r);
-    r[`best mode`] = k;
-    r[`best time`] = r[`${k} time`];
-    r[`best error`] = r[`${k} error`];
-    r[`best speedup (this/nvgraph)`] = r[`${k} speedup (this/nvgraph)`];
-    r[`best speedup * (V+E)`]  = r[`${k} speedup * (V+E)`];
+  var a = [];
+  for (var rs of m.values()) {
+    rs.sort((r, s) => r.time < s.time);
+    a.push(...rs);
   }
-}
-
-
-function orderKeys() {
-  var a = ['name', 'vertices', 'edges', 'components', 'levels', 'nvgraph'];
-  a.push('best mode', 'best time', 'best error', 'best speedup (this/nvgraph)', 'best speedup * (V+E)');
-  for (var k of KEYS)
-    a.push(`${k} time`);
-  for (var k of KEYS)
-    a.push(`${k} error`);
-  for (var k of KEYS)
-    a.push(`${k} speedup (this/nvgraph)`);
-  for (var k of KEYS)
-    a.push(`${k} speedup * (V+E)`);
   return a;
 }
 
 
 function main(a) {
-  var [,, log, csv] = a;
-  var reference = path.join(__dirname, 'reference.csv');
-  var rs = readCsv(reference);
-  var m  = parseReference(rs);
-  parseLog(m, log);
-  postProcess(m);
-  var cs = orderKeys();
-  writeCsv(csv, [...m.values()], cs);
+  var [,, logfile, csvfile] = a;
+  var reffile = path.join(__dirname, 'reference.csv');
+  var ref = readCsv(reffile);
+  var grp = parseReference(ref);
+  var log = parseLog(grp, logfile);
+  var rs  = postProcess(log);
+  writeCsv(csvfile, rs);
 }
 main(process.argv);
