@@ -403,7 +403,7 @@ T* pageRankCudaLoop(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int 
     swap(aD, rD);
     e0 = e1;
   }
-  printf("pageRankCudaLoop(): %d\n", l);
+  // printf("pageRankCudaLoop(): %d\n", l);
   return aD;
 }
 
@@ -443,8 +443,8 @@ auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>
   auto vroot = pageRankVertexRoot(ks, ch, id);
   auto vdist = pageRankVertexDistance(ks, ch);
   pageRankMarkSpecial(vfrom, vroot);
-  printf("isUnique(ch)?: %d\n", isUnique(ch));
-  printf("isUnique(id)?: %d\n", isUnique(id));
+  // printf("isUnique(ch)?: %d\n", isUnique(ch));
+  // printf("isUnique(id)?: %d\n", isUnique(id));
   int N = xt.order();
   int g = GRID_DIM;
   int VFROM1 = vfrom.size() * sizeof(int);
