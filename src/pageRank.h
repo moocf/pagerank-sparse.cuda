@@ -304,8 +304,8 @@ template <class T>
 __global__ void pageRankSpecialKernel(T *a, T *r, int *vroot, int *vdist, T c0, T p, int i, int n) {
   DEFINE(t, b, B, G);
   for (int v=i+B*b+t, V=i+n, DV=G*B; v<V; v+=DV) {
-    if (pageRankKernelIsVertexSpecial(vroot, v)) continue;
-    a[v] = pageRankKernelCalculate(r[vroot[v]], vdist[v], c0, p);
+    if (vroot[v] < 0) continue;
+    a[v] = pageRankKernelCalculate(a[vroot[v]], vdist[v], c0, p);
   }
 }
 
