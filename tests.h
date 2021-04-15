@@ -556,12 +556,14 @@ const char* testPageRank() {
   auto kt = transposeWithDegree(k);
   float t, E = 1e-5; Flags F;
 
-  for (int o=0; o<32; o++) {
-    F.splitComponents = o & 16;
-    F.largeComponents = o & 8;
-    F.orderVertices   = o & 4;
-    F.orderComponents = o & 2;
-    F.skipConverged   = o & 1;
+  for (int o=0; o<128; o++) {
+    F.splitComponents  = o & 64;
+    F.largeComponents  = o & 32;
+    F.orderComponents  = o & 16;
+    F.orderVertices    = o & 8;
+    F.removeIdenticals = o & 4;
+    F.removeChains     = o & 2;
+    F.skipConverged    = o & 1;
     if (!isValid(F)) continue;
     auto p1 = pageRankPush(t, g, gt);
     auto p2 = pageRank(t, g, gt);
