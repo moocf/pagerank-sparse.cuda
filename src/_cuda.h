@@ -9,7 +9,7 @@
 
 #ifndef BLOCK_DIM
 // Default threads per block.
-#define BLOCK_DIM 64
+#define BLOCK_DIM 256
 #endif
 
 #ifndef GRID_DIM
