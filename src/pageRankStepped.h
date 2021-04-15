@@ -41,10 +41,10 @@ auto pageRankWaves(G& xt, vector<vector<K>>& cs, PageRankMode M) {
 // PAGE-RANK STEPPED (CUDA)
 
 template <class T, class I>
-T* pageRankSteppedCudaStep(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int *vfromD, int *efromD, int *vdataD, int i, I&& ls, int n, int N, T p, T E, bool fSC) {
+T* pageRankSteppedCudaStep(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int *vfromD, int *efromD, int *vdataD, int *vrootD, int *vdistD, int i, I&& ls, int n, int N, T p, T E, bool fSC) {
   for (auto ns : ls) {
     int n = sumAbs(ns);
-    T *bD = pageRankCudaLoop(e, r0, eD, r0D, aD, cD, rD, fD, vfromD, efromD, vdataD, i, ns, n, N, p, E, fSC);
+    T *bD = pageRankCudaLoop(e, r0, eD, r0D, aD, cD, rD, fD, vfromD, efromD, vdataD, vrootD, vdistD, i, ns, n, N, p, E, fSC);
     if (bD != rD) swap(aD, rD);
     i += n;
   }
@@ -53,7 +53,7 @@ T* pageRankSteppedCudaStep(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *f
 
 
 template <class T, class I>
-T* pageRankSteppedCudaLoop(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int *vfromD, int *efromD, int *vdataD, int i, I&& ls, int n, int N, T p, T E, bool fSC, int d0) {
+T* pageRankSteppedCudaLoop(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int *vfromD, int *efromD, int *vdataD, int *vrootD, int *vdistD, int i, I&& ls, int n, int N, T p, T E, bool fSC, int d0) {
   int B = BLOCK_DIM;
   int G = min(ceilDiv(N, B), GRID_DIM);
   int G1 = G * sizeof(T);
@@ -73,12 +73,12 @@ T* pageRankSteppedCudaLoop(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *f
 
 
 template <class T, class I>
-T* pageRankSteppedCudaCore(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int *vfromD, int *efromD, int *vdataD, I&& ls, int N, T p, T E, bool fSC) {
+T* pageRankSteppedCudaCore(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int *vfromD, int *efromD, int *vdataD, int *vrootD, int *vdistD, I&& ls, int N, T p, T E, bool fSC) {
   int B = BLOCK_DIM;
   int G = min(ceilDiv(N, B), GRID_DIM);
   fillKernel<<<G, B>>>(rD, N, T(1)/N);
   pageRankFactorKernel<<<G, B>>>(fD, vdataD, p, N);
-  return pageRankSteppedCudaStep(e, r0, eD, r0D, aD, cD, rD, fD, vfromD, efromD, vdataD, 0, ls, N, N, p, E, fSC);
+  return pageRankSteppedCudaStep(e, r0, eD, r0D, aD, cD, rD, fD, vfromD, efromD, vdataD, vrootD, vdistD, 0, ls, N, N, p, E, fSC);
 }
 
 
@@ -89,21 +89,35 @@ auto pageRankSteppedCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOpt
   auto F = o.flags;
   auto p = o.damping;
   auto E = o.convergence;
-  bool fSC = F.skipConverged;
   F.splitComponents = true;
   F.orderComponents = true;
   F.largeComponents = true;
-  auto cs = pageRankComponents(x, xt, M, F);
+  F.removeIdenticals = true;
+  F.removeChains = true;
+  F.skipConverged = true;
+  bool fSC = F.skipConverged;
+  bool fRI = F.removeIdenticals;
+  bool fRC = F.removeChains;
+  auto ch = fRC? chains(x, xt)       : vector<vector<K>>();
+  auto id = fRI? inIdenticals(x, xt) : vector<vector<K>>();
+  auto cs = pageRankComponents(x, xt, ch, id, M, F);
   auto ls = pageRankWaves(xt, cs, M);
   auto ks = join(cs);
   auto vfrom = sourceOffsets(xt, ks);
   auto efrom = destinationIndices(xt, ks);
   auto vdata = vertexData(xt, ks);  // outDegree
+  auto vroot = pageRankVertexRoot(ks, ch, id);
+  auto vdist = pageRankVertexDistance(ks, ch);
+  pageRankMarkSpecial(vfrom, vroot);
+  // printf("isUnique(ch)?: %d\n", isUnique(ch));
+  // printf("isUnique(id)?: %d\n", isUnique(id));
   int N = xt.order();
   int g = GRID_DIM;
   int VFROM1 = vfrom.size() * sizeof(int);
   int EFROM1 = efrom.size() * sizeof(int);
   int VDATA1 = vdata.size() * sizeof(int);
+  int VROOT1 = vroot.size() * sizeof(int);
+  int VDIST1 = vdist.size() * sizeof(int);
   int G1 = g * sizeof(T);
   int N1 = N * sizeof(T);
   vector<T> a(N);
@@ -111,6 +125,7 @@ auto pageRankSteppedCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOpt
   T *e,  *r0;
   T *eD, *r0D, *fD, *rD, *cD, *aD, *bD;
   int *vfromD, *efromD, *vdataD;
+  int *vrootD = NULL, *vdistD = NULL;
   cudaStream_t s1, s2, s3;
   TRY( cudaProfilerStart() );
   TRY( cudaStreamCreate(&s1) );
@@ -128,12 +143,16 @@ auto pageRankSteppedCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOpt
   TRY( cudaMalloc(&vfromD, VFROM1) );
   TRY( cudaMalloc(&efromD, EFROM1) );
   TRY( cudaMalloc(&vdataD, VDATA1) );
+  if (fRI || fRC) TRY( cudaMalloc(&vrootD, VROOT1) );
+  if (fRI || fRC) TRY( cudaMalloc(&vdistD, VDIST1) );
   TRY( cudaMemcpyAsync(vfromD, vfrom.data(), VFROM1, cudaMemcpyHostToDevice, s1) );
   TRY( cudaMemcpyAsync(efromD, efrom.data(), EFROM1, cudaMemcpyHostToDevice, s1) );
   TRY( cudaMemcpyAsync(vdataD, vdata.data(), VDATA1, cudaMemcpyHostToDevice, s1) );
+  if (fRI || fRC) TRY( cudaMemcpyAsync(vrootD, vroot.data(), VROOT1, cudaMemcpyHostToDevice, s1) );
+  if (fRI || fRC) TRY( cudaMemcpyAsync(vdistD, vdist.data(), VDIST1, cudaMemcpyHostToDevice, s1) );
   TRY( cudaStreamSynchronize(s1) );
 
-  t = measureDuration([&]() { bD = pageRankSteppedCudaCore(e, r0, eD, r0D, aD, cD, rD, fD, vfromD, efromD, vdataD, ls, N, p, E, fSC); });
+  t = measureDuration([&]() { bD = pageRankSteppedCudaCore(e, r0, eD, r0D, aD, cD, rD, fD, vfromD, efromD, vdataD, vrootD, vdistD, ls, N, p, E, fSC); });
   TRY( cudaMemcpy(a.data(), bD, N1, cudaMemcpyDeviceToHost) );
 
   TRY( cudaFree(eD) );
