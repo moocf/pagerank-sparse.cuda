@@ -470,7 +470,7 @@ const char* testIdenticals() {
 
 
 const char* testChains() {
-  vector<vector<int>> a {{1, 2, 3, 4}, {1, 5, 6, 7}, {8, 9}};
+  vector<vector<int>> a {{2, 3, 4}, {5, 6, 7}};
   DiGraph<> g;
   g.addEdge(1, 2);
   g.addEdge(1, 5);

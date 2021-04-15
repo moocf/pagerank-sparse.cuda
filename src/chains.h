@@ -38,8 +38,7 @@ auto chains(G& x, H& xt) {
     vis[u] = true;
     for (auto v : x.edges(u)) {
       auto b = chainAt(x, xt, v, vis);
-      if (b.size() == 0) continue;
-      b.insert(b.begin(), u);
+      if (b.size() < 2) continue;
       a.push_back(b);
     }
   }
