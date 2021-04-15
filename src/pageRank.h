@@ -306,7 +306,8 @@ __global__ void pageRankSpecialKernel(T *a, T *r, int *vroot, int *vdist, T c0, 
   DEFINE(t, b, B, G);
   for (int v=i+B*b+t, V=i+n, DV=G*B; v<V; v+=DV) {
     if (vroot[v] < 0) continue;
-    a[v] = pageRankKernelCalculate(a[vroot[v]], vdist[v], c0, p);
+    if (!vdist[v]) a[v] = a[vroot[v]];
+    else a[v] = pageRankKernelCalculate(r[vroot[v]], vdist[v], c0, p);
   }
 }
 
