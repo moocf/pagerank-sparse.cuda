@@ -226,7 +226,7 @@ void pageRankMarkSpecial(vector<int>& a, vector<int>& vroot) {
 
 template <class G, class K>
 int pageRankSwitchPoint(G& xt, vector<K>& ks) {
-  int deg = int(0.5 * BLOCK_DIM);
+  int deg = int(0.25 * BLOCK_DIM);
   auto it = lower_bound(ks.begin(), ks.end(), deg, [&](K u, int d) {
     return xt.degree(u) < d;
   });
