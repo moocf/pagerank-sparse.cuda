@@ -19,6 +19,7 @@
 #include "error.h"
 #include "reorder.h"
 #include "join.h"
+#include "unique.h"
 #include "vertices.h"
 #include "sourceOffsets.h"
 #include "destinationIndices.h"
@@ -441,6 +442,8 @@ auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>
   auto vroot = pageRankVertexRoot(ks, ch, id);
   auto vdist = pageRankVertexDistance(ks, ch);
   pageRankMarkSpecial(vfrom, vroot);
+  printf("isUnique(ch)?: %d\n", isUnique(ch));
+  printf("isUnique(id)?: %d\n", isUnique(id));
   int N = xt.order();
   int g = GRID_DIM;
   int VFROM1 = vfrom.size() * sizeof(int);
