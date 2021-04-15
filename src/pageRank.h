@@ -385,7 +385,8 @@ T* pageRankCudaLoop(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int 
   int H1 = H * sizeof(T);
   int SKIP = 4;
   T e0 = T();
-  for (int l=0;; l++) {
+  int l = 0;
+  for (;; l++) {
     bool _fSC = fSC && (l%SKIP > 0);
     sumIfNotKernel<<<H, B>>>(r0D,  rD,   vdataD, N);
     multiplyKernel<<<G, B>>>(cD+i, rD+i, fD+i,   n);
@@ -400,6 +401,7 @@ T* pageRankCudaLoop(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int 
     swap(aD, rD);
     e0 = e1;
   }
+  printf("pageRankCudaLoop(): %d\n", l);
   return aD;
 }
 
