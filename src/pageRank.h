@@ -160,11 +160,9 @@ void pageRankSortComponents(C& a, G& xt, vector<vector<K>>& ch, vector<vector<K>
   auto ids = setFrom(id, 1);
   for (auto& c : a) {
     sort(c.begin(), c.end(), [&](K u, K v) {
-      if (ids.count(u)) return true;
-      if (ids.count(v)) return false;
-      if (chs.count(u)) return true;
-      if (chs.count(v)) return false;
-      return xt.degree(u) < xt.degree(v);
+      int du = ids.count(u) || chs.count(u)? 0 : xt.degree(u);
+      int dv = ids.count(v) || chs.count(v)? 0 : xt.degree(v);
+      return du < dv;
     });
   }
 }
@@ -439,7 +437,7 @@ auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>
   auto vdata = vertexData(xt, ks);  // outDegree
   auto vroot = pageRankVertexRoot(ks, ch, id);
   auto vdist = pageRankVertexDistance(ks, ch);
-  pageRankMarkSpecial(vfrom, vroot);
+  // pageRankMarkSpecial(vfrom, vroot);
   int N = xt.order();
   int g = GRID_DIM;
   int VFROM1 = vfrom.size() * sizeof(int);
