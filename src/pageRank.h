@@ -59,6 +59,17 @@ struct PageRankFlags {
   bool removeIdenticals = false;
   bool removeChains     = false;
   bool skipConverged    = false;
+
+  PageRankFlags() = default;
+  PageRankFlags(int n) {
+    splitComponents  = n & 64;
+    largeComponents  = n & 32;
+    orderComponents  = n & 16;
+    orderVertices    = n & 8;
+    removeIdenticals = n & 4;
+    removeChains     = n & 2;
+    skipConverged    = n & 1;
+  }
 };
 
 template <class T>

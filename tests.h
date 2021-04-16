@@ -554,7 +554,7 @@ const char* testPageRank() {
   auto it = transposeWithDegree(i);
   auto jt = transposeWithDegree(j);
   auto kt = transposeWithDegree(k);
-  float t, E = 1e-5; Flags F;
+  float t, E = 1e-5;
 
   auto p1 = pageRankPush(t, g, gt);
   auto p2 = pageRank(t, g, gt);
@@ -577,13 +577,7 @@ const char* testPageRank() {
   if (absError(e, t1) >= E) return "pageRankPushMinNv";
   if (absError(e, t2) >= E) return "pageRankMinNv";
   for (int o=0; o<128; o++) {
-    F.splitComponents  = o & 64;
-    F.largeComponents  = o & 32;
-    F.orderComponents  = o & 16;
-    F.orderVertices    = o & 8;
-    F.removeIdenticals = o & 4;
-    F.removeChains     = o & 2;
-    F.skipConverged    = o & 1;
+    Flags F(o);
     if (!isValid(F)) continue;
     auto p3 = pageRankCuda(t, g, gt, {Mode::BLOCK, F});
     auto p4 = pageRankCuda(t, g, gt, {Mode::THREAD, F});
