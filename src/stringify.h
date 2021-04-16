@@ -7,6 +7,18 @@ using std::string;
 
 
 
+// Prints page rank mode.
+const char* stringify(PageRankMode x) {
+  typedef PageRankMode Mode;
+  switch (x) {
+    default:
+    case Mode::BLOCK:    return "{B}";
+    case Mode::THREAD:   return "{T}";
+    case Mode::SWITCHED: return "{S}";
+  }
+}
+
+
 // Prints page rank flags.
 auto stringify(PageRankFlags& x) {
   string a = "{";

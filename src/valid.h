@@ -9,6 +9,11 @@ bool isValid(PageRankFlags x) {
 }
 
 
+bool isValidSwitched(PageRankFlags x) {
+  return !x.splitComponents || x.largeComponents;
+}
+
+
 bool isValidStepped(PageRankFlags x) {
   return x.splitComponents && x.largeComponents && x.orderComponents;
 }

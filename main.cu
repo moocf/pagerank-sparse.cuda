@@ -18,11 +18,41 @@ void runPageRankPush(G& g, H& gt, bool all) {
 }
 
 
+template <class G, class H, class C>
+void runPageRankCuda(G& g, H& gt, bool all, PageRankFlags F, C& r1) {
+  typedef PageRankMode Mode; float t;
+  if (!isValid(F)) return;
+  auto r2 = pageRankCuda(t, g, gt, {Mode::BLOCK, F});
+  printf("[%07.1f ms] [%.4e] pageRankCuda {block}    ", t, absError(r1, r2)); cout << stringify(F) << "\n"; if (all) print(r2);
+  auto r3 = pageRankCuda(t, g, gt, {Mode::THREAD, F});
+  printf("[%07.1f ms] [%.4e] pageRankCuda {thread}   ", t, absError(r1, r3)); cout << stringify(F) << "\n"; if (all) print(r3);
+  if (!isValidSwitched(F)) return;
+  auto r4 = pageRankCuda(t, g, gt, {Mode::SWITCHED, F});
+  printf("[%07.1f ms] [%.4e] pageRankCuda {switched} ", t, absError(r1, r4)); cout << stringify(F) << "\n"; if (all) print(r4);
+}
+
+
+template <class G, class H, class C>
+void runPageRankSteppedCuda(G& g, H& gt, bool all, PageRankFlags F, C& r1) {
+  typedef PageRankMode Mode; float t;
+  if (!isValid(F) || !isValidStepped(F)) return;
+  auto r5 = pageRankSteppedCuda(t, g, gt, {Mode::BLOCK, F});
+  printf("[%07.1f ms] [%.4e] pageRankSteppedCuda {block}    ", t, absError(r1, r5)); cout << stringify(F) << "\n"; if (all) print(r5);
+  auto r6 = pageRankSteppedCuda(t, g, gt, {Mode::THREAD, F});
+  printf("[%07.1f ms] [%.4e] pageRankSteppedCuda {thread}   ", t, absError(r1, r6)); cout << stringify(F) << "\n"; if (all) print(r6);
+  if (!isValidSwitched(F)) return;
+  auto r7 = pageRankSteppedCuda(t, g, gt, {Mode::SWITCHED, F});
+  printf("[%07.1f ms] [%.4e] pageRankSteppedCuda {switched} ", t, absError(r1, r7)); cout << stringify(F) << "\n"; if (all) print(r7);
+}
+
+
 template <class G, class H>
 void runPageRank(G& g, H& gt, bool all) {
   typedef PageRankMode  Mode;
   typedef PageRankFlags Flags;
   float t; Flags F;
+  auto r1 = pageRank(t, g, gt);
+  printf("[%07.1f ms] [%.4e] pageRank\n", t, absError(r1, r1)); if (all) print(r1);
   for (int o=0; o<128; o++) {
     F.splitComponents  = o & 64;
     F.largeComponents  = o & 32;
@@ -31,22 +61,8 @@ void runPageRank(G& g, H& gt, bool all) {
     F.removeIdenticals = o & 4;
     F.removeChains     = o & 2;
     F.skipConverged    = o & 1;
-    if (!isValid(F)) continue;
-    auto r1 = pageRank(t, g, gt);
-    printf("[%07.1f ms] [%.4e] pageRank              \n", t, absError(r1, r1)); if (all) print(r1);
-    auto r2 = pageRankCuda(t, g, gt, {Mode::BLOCK, F});
-    printf("[%07.1f ms] [%.4e] pageRankCuda {block}    ", t, absError(r1, r2)); cout << stringify(F) << "\n"; if (all) print(r2);
-    auto r3 = pageRankCuda(t, g, gt, {Mode::THREAD, F});
-    printf("[%07.1f ms] [%.4e] pageRankCuda {thread}   ", t, absError(r1, r3)); cout << stringify(F) << "\n"; if (all) print(r3);
-    auto r4 = pageRankCuda(t, g, gt, {Mode::SWITCHED, F});
-    printf("[%07.1f ms] [%.4e] pageRankCuda {switched} ", t, absError(r1, r4)); cout << stringify(F) << "\n"; if (all) print(r4);
-    if (!isValidStepped(F)) continue;
-    auto r5 = pageRankSteppedCuda(t, g, gt, {Mode::BLOCK, F});
-    printf("[%07.1f ms] [%.4e] pageRankSteppedCuda {block}    ", t, absError(r1, r5)); cout << stringify(F) << "\n"; if (all) print(r5);
-    auto r6 = pageRankSteppedCuda(t, g, gt, {Mode::THREAD, F});
-    printf("[%07.1f ms] [%.4e] pageRankSteppedCuda {thread}   ", t, absError(r1, r6)); cout << stringify(F) << "\n"; if (all) print(r6);
-    auto r7 = pageRankSteppedCuda(t, g, gt, {Mode::SWITCHED, F});
-    printf("[%07.1f ms] [%.4e] pageRankSteppedCuda {switched} ", t, absError(r1, r7)); cout << stringify(F) << "\n"; if (all) print(r7);
+    runPageRankCuda(g, gt, all, F, r1);
+    runPageRankSteppedCuda(g, gt, all, F, r1);
   }
 }
 
