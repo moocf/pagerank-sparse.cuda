@@ -10,5 +10,5 @@ bool isValid(PageRankFlags x) {
 
 
 bool isValidStepped(PageRankFlags x) {
-  return x.splitComponents && x.orderComponents;
+  return x.splitComponents && x.largeComponents && x.orderComponents;
 }
