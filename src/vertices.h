@@ -1,7 +1,10 @@
 #pragma once
+#include <set>
 #include <vector>
 #include <functional>
+#include "from.h"
 
+using std::set;
 using std::vector;
 using std::hash;
 
@@ -29,10 +32,17 @@ auto verticesBy(G& x, F fm) {
 }
 
 
-template <class G, class K>
-size_t vertexHash(G& x, K u) {
+template <class G, class S, class K>
+size_t vertexHash(G& x, S& es, K u) {
   size_t a = 0;
-  for (K v : x.edges(u))
+  setFrom(es, x.edges(u));
+  for (K v : es)
     a ^= hash<K>{}(v) + 0x9e3779b9 + (a<<6) + (a>>2); // from boost::hash_combine
   return a;
+}
+
+template <class G, class K>
+size_t vertexHash(G& x, K u) {
+  set<K> es;
+  return vertexHash(x, es, u);
 }

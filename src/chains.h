@@ -31,4 +31,5 @@ auto chains(G& x, H& xt) {
     chainTraverse(b, x, xt, vis, v);
     a.push_back(b);
   }
+  return a;
 }
