@@ -75,8 +75,7 @@ function resultConfig(fn, mode, flags) {
 function parseLog(m, pth) {
   var d = readFile(pth);
   var ls = d.split(/\n/g).map(l => l.trim());
-  var g = null, r = null;
-  var a = new Map();
+  var a = new Map(), g = null;
   for (var l of ls) {
     if (RGRAPH.test(l)) {
       var [,, name] = l.match(RGRAPH);
@@ -89,6 +88,7 @@ function parseLog(m, pth) {
     }
     else if (RRESULT.test(l)) {
       var [, time, error, fn, mode, flags] = l.match(RRESULT);
+      var r      = {};
       r.graph    = g.name;
       r.config   = resultConfig(fn, mode, flags);
       r.error    = parseFloat(error);
@@ -106,7 +106,7 @@ function parseLog(m, pth) {
 function postProcess(m) {
   var a = [];
   for (var rs of m.values()) {
-    rs.sort((r, s) => r.time < s.time);
+    rs.sort((r, s) => r.time - s.time);
     a.push(...rs);
   }
   return a;
