@@ -505,6 +505,8 @@ auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>
   TRY( cudaFree(vfromD) );
   TRY( cudaFree(efromD) );
   TRY( cudaFree(vdataD) );
+  if (fRI || fRC) TRY( cudaFree(vrootD) );
+  if (fRI || fRC) TRY( cudaFree(vdistD) );
   TRY( cudaFreeHost(e) );
   TRY( cudaFreeHost(r0) );
   TRY( cudaStreamDestroy(s1) );
