@@ -1,55 +1,45 @@
 #pragma once
-#include <set>
+#include <map>
 #include <vector>
-#include "from.h"
-#include "contains.h"
+#include <utility>
+#include "vertices.h"
 
-using std::set;
+using std::map;
 using std::vector;
+using std::pair;
+using std::make_pair;
+using std::move;
 
 
 
 
-template <class G, class C, class K, class F>
-auto identicalSiblings(G& xt, C& vis, vector<K>& vs, int i, set<K>& s, F fn) {
-  vector<K> a;
-  auto vi = vs[i];
-  setFrom(s, xt.edges(vi));
-  for (int j=i+1, J=vs.size(); j<J; j++) {
-    auto vj = vs[j];
-    if (vis[vj]) continue;
-    if (s.size() != xt.degree(vj)) continue;
-    if (!contains(s, xt.edges(vj)) || !fn(vj)) continue;
-    a.push_back(vj);
-    vis[vj] = true;
-  }
-  if (a.size() > 0) a.insert(a.begin(), vi);
-  return a;
-}
-
-
-template <class G, class H, class F>
-auto inIdenticals(G& x, H& xt, F fn) {
+template <class G, class H, class C, class M>
+void identicalSiblings(G& x, H& xt, C& vis, M& m) {
   using K = typename G::TKey;
-  vector<vector<K>> a;
-  vector<K> vs;
-  set<K> s;
-  auto vis = x.vertexContainer(bool());
-  for (auto u : x.vertices()) {
-    if (x.degree(u) < 2) continue;
-
-    vectorFrom(vs, x.edges(u));
-    for (int i=0, I=vs.size(); i<I; i++) {
-      if (vis[vs[i]]) continue;
-      auto b = identicalSiblings(xt, vis, vs, i, s, fn);
-      if (b.size() >= 2) a.push_back(b);
-      vis[vs[i]] = true;
-    }
+  m.clear();
+  for (K v : x.edges(u)) {
+    if (vis[v]) continue;
+    vis[v] = true;
+    size_t h = vertexHash(xt, v);
+    if (!m.count(h)) m[h] = make_pair({}, v);
+    else m[h].first.push_back(v);
   }
-  return a;
+  for (auto&& [_, p] : m) {
+    if (p.first.empty()) continue;
+    p.first.push_back(p.second);
+    a.push_back(move(p.first));
+  }
 }
+
 
 template <class G, class H>
-auto inIdenticals(G& x, H& xt) {
-  return inIdenticals(x, xt, [](auto u) { return true; });
+auto identicals(G& x, H& xt) {
+  using K = typename G::TKey;
+  map<size_t, K> m;
+  vector<vector<K>> a;
+  auto vis = x.vertexContainer(bool());
+  for (K u : x.vertices()) {
+    if (x.degree(u)<2) continue;
+    identicalSiblings(x, xt, vis, m);
+  }
 }
