@@ -1,8 +1,10 @@
 #pragma once
 #include <vector>
+#include <algorithm>
 #include "edges.h"
 
 using std::vector;
+using std::reverse;
 
 
 
@@ -27,7 +29,7 @@ auto chains(G& x, H& xt) {
     if (vis[v] || xt.degree(v)!=1 || x.degree(v)!=1) continue;
     K u = edge(xt, v), w = edge(x, v);
     if ((vis[u] || xt.degree(u)!=1) && (vis[w] || x.degree(w)!=1)) continue;
-    chainTraverse(b, xt, x, vis, u);
+    chainTraverse(b, xt, x, vis, u); reverse(b.begin(), b.end());
     chainTraverse(b, x, xt, vis, v);
     a.push_back(b);
   }
