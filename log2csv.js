@@ -94,7 +94,7 @@ function parseLog(m, pth) {
       r.error    = parseFloat(error);
       r.time     = parseFloat(time);
       r.speedup  = r.time/g.time_nvgraph;
-      r.speedupf = r.speedup * (g.order * g.size);
+      r.speedupf = r.speedup * (g.order + g.size);
       if (!a.has(r.graph)) a.set(r.graph, []);
       a.get(r.graph).push(r);
     }
