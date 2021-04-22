@@ -52,12 +52,15 @@ order: 29008 size: 38416 {}
 # Download program
 rm -rf pagerank-sparse
 git clone https://github.com/cudaf/pagerank-sparse
+git clone https://github.com/wolfram77/graphs
+mkdir -p ~/data && cd graphs && cp -r data/* ~/data/ && cd ..
+cd pagerank-sparse
 ```
 
 ```bash
 # Run
-cd pagerank-sparse && nvcc -Xcompiler -fopenmp -O3 main.cu
-cd pagerank-sparse && nvprof ./a.out data/aug2d.mtx
+nvcc -Xcompiler -fopenmp -O3 main.cu
+nvprof ./a.out ~/data/aug2d.mtx
 ```
 
 <br>
