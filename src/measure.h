@@ -2,7 +2,7 @@
 #include <chrono>
 #include "_cuda.h"
 
-using std::chrono::milliseconds;
+using std::chrono::microseconds;
 using std::chrono::high_resolution_clock;
 using std::chrono::duration_cast;
 
@@ -17,8 +17,8 @@ float measureDuration(F fn) {
   fn();
 
   auto stop = high_resolution_clock::now();
-  auto duration = duration_cast<milliseconds>(stop - start);
-  return duration.count();
+  auto duration = duration_cast<microseconds>(stop - start);
+  return duration.count()/1000.0f;
 }
 
 
