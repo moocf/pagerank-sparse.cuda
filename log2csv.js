@@ -58,7 +58,7 @@ function parseReference(rs) {
   var a = new Map();
   for (var r of rs) {
     var name = r.name;
-    var time_nvgraph = parseInt(r.time_nvgraph, 10);
+    var time_nvgraph = parseFloat(r.time_nvgraph);
     a.set(name, {name, time_nvgraph});
   }
   return a;
