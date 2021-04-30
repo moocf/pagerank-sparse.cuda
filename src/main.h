@@ -31,3 +31,4 @@
 #include "pageRank.h"
 #include "pageRankPush.h"
 #include "pageRankStepped.h"
+#include "pageRankNvgraph.h"

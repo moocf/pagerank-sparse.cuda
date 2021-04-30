@@ -66,8 +66,9 @@ function parseReference(rs) {
 
 
 function resultConfig(fn, mode, flags) {
-  if (fn === 'pageRank') return 'cpu';
-  if (fn === 'pageRankCuda') return `${mode} {${flags.trim()}}`;
+  if (fn === 'pageRank')        return 'cpu';
+  if (fn === 'pageRankNvgraph') return 'nvgraph';
+  if (fn === 'pageRankCuda')    return `${mode} {${flags.trim()}}`;
   return `s-${mode} {${flags.trim()}}`;
 }
 

@@ -46,12 +46,11 @@ void runPageRankSteppedCuda(G& g, H& gt, bool all, PageRankFlags F, C& r1) {
 }
 
 
-template <class G, class H>
-void runPageRank(G& g, H& gt, bool all) {
-  typedef PageRankFlags Flags;
-  float t;
-  auto r1 = pageRank(t, g, gt);
-  printf("[%09.3f ms] [%.4e] pageRank\n", t, absError(r1, r1)); if (all) print(r1);
+template <class G, class H, class I>
+void runPageRank(G& g, H& gt, I& gn, bool all) {
+  typedef PageRankFlags Flags; float t;
+  auto r1 = pageRankNvgraph(t, gn);
+  printf("[%09.3f ms] [%.4e] pageRankNvgraph\n", t, absError(r1, r1)); if (all) print(r1);
   for (int o=0; o<128; o++)
     runPageRankCuda(g, gt, all, Flags(o), r1);
   for (int o=0; o<128; o++)
@@ -66,12 +65,11 @@ int main(int argc, char **argv) {
   setupAll();
   testAll();
   printf("Loading graph %s ...\n", file);
-  auto g = readMtx(file);
-  print(g);
-  auto gt = transposeWithDegree(g);
-  print(gt);
+  auto g  = readMtx(file);          print(g);
+  auto gt = transposeWithDegree(g); print(gt);
+  auto gn = transposeForNvgraph(g); print(gn);
   // runPageRankPush(g, gt, all);
-  runPageRank(g, gt, all);
+  runPageRank(g, gt, gn, all);
   // runAdd();
   // runFill();
   // runSum();
