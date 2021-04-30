@@ -17,6 +17,12 @@
 #define GRID_DIM 4096
 #endif
 
+#ifndef _REPEAT
+/** No. of times to repeat execution. */
+#define _REPEAT 10
+#endif
+
+
 
 
 

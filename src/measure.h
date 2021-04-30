@@ -11,27 +11,29 @@ using std::chrono::duration_cast;
 
 // In milliseconds.
 template <class F>
-float measureDuration(F fn) {
+float measureDuration(F fn, int n=_REPEAT) {
   auto start = high_resolution_clock::now();
 
-  fn();
+  for (int i=0; i<n; i++)
+    fn();
 
   auto stop = high_resolution_clock::now();
   auto duration = duration_cast<microseconds>(stop - start);
-  return duration.count()/1000.0f;
+  return duration.count()/(n*1000.0f);
 }
 
 
 
 
 template <class F>
-float measureDurationCuda(F fn) {
+float measureDurationCuda(F fn, int n=_REPEAT) {
   cudaEvent_t start, stop;
   TRY( cudaEventCreate(&start) );
   TRY( cudaEventCreate(&stop) );
   TRY( cudaEventRecord(start, 0) );
 
-  fn();
+  for (int i=0; i<n; i++)
+    fn();
 
   float duration;
   TRY( cudaEventRecord(stop, 0) );
@@ -40,5 +42,5 @@ float measureDurationCuda(F fn) {
 
   TRY( cudaEventDestroy(start) );
   TRY( cudaEventDestroy(stop) );
-  return duration;
+  return duration/n;
 }

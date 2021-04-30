@@ -14,7 +14,7 @@ template <class G, class H>
 void runPageRankPush(G& g, H& gt, bool all) {
   float t;
   auto r1 = pageRankPush(t, g, gt);
-  printf("[%07.1f ms] pageRankPush\n", t); if (all) print(r1);
+  printf("[%07.3f ms] pageRankPush\n", t); if (all) print(r1);
 }
 
 
@@ -23,12 +23,12 @@ void runPageRankCuda(G& g, H& gt, bool all, PageRankFlags F, C& r1) {
   typedef PageRankMode Mode; float t;
   if (!isValid(F)) return;
   auto r2 = pageRankCuda(t, g, gt, {Mode::BLOCK, F});
-  printf("[%07.1f ms] [%.4e] pageRankCuda {block}    ", t, absError(r1, r2)); cout << stringify(F) << "\n"; if (all) print(r2);
+  printf("[%07.3f ms] [%.4e] pageRankCuda {block}    ", t, absError(r1, r2)); cout << stringify(F) << "\n"; if (all) print(r2);
   auto r3 = pageRankCuda(t, g, gt, {Mode::THREAD, F});
-  printf("[%07.1f ms] [%.4e] pageRankCuda {thread}   ", t, absError(r1, r3)); cout << stringify(F) << "\n"; if (all) print(r3);
+  printf("[%07.3f ms] [%.4e] pageRankCuda {thread}   ", t, absError(r1, r3)); cout << stringify(F) << "\n"; if (all) print(r3);
   if (!isValidSwitched(F)) return;
   auto r4 = pageRankCuda(t, g, gt, {Mode::SWITCHED, F});
-  printf("[%07.1f ms] [%.4e] pageRankCuda {switched} ", t, absError(r1, r4)); cout << stringify(F) << "\n"; if (all) print(r4);
+  printf("[%07.3f ms] [%.4e] pageRankCuda {switched} ", t, absError(r1, r4)); cout << stringify(F) << "\n"; if (all) print(r4);
 }
 
 
@@ -37,12 +37,12 @@ void runPageRankSteppedCuda(G& g, H& gt, bool all, PageRankFlags F, C& r1) {
   typedef PageRankMode Mode; float t;
   if (!isValid(F) || !isValidStepped(F)) return;
   auto r5 = pageRankSteppedCuda(t, g, gt, {Mode::BLOCK, F});
-  printf("[%07.1f ms] [%.4e] pageRankSteppedCuda {block}    ", t, absError(r1, r5)); cout << stringify(F) << "\n"; if (all) print(r5);
+  printf("[%07.3f ms] [%.4e] pageRankSteppedCuda {block}    ", t, absError(r1, r5)); cout << stringify(F) << "\n"; if (all) print(r5);
   auto r6 = pageRankSteppedCuda(t, g, gt, {Mode::THREAD, F});
-  printf("[%07.1f ms] [%.4e] pageRankSteppedCuda {thread}   ", t, absError(r1, r6)); cout << stringify(F) << "\n"; if (all) print(r6);
+  printf("[%07.3f ms] [%.4e] pageRankSteppedCuda {thread}   ", t, absError(r1, r6)); cout << stringify(F) << "\n"; if (all) print(r6);
   if (!isValidSwitched(F)) return;
   auto r7 = pageRankSteppedCuda(t, g, gt, {Mode::SWITCHED, F});
-  printf("[%07.1f ms] [%.4e] pageRankSteppedCuda {switched} ", t, absError(r1, r7)); cout << stringify(F) << "\n"; if (all) print(r7);
+  printf("[%07.3f ms] [%.4e] pageRankSteppedCuda {switched} ", t, absError(r1, r7)); cout << stringify(F) << "\n"; if (all) print(r7);
 }
 
 
@@ -51,7 +51,7 @@ void runPageRank(G& g, H& gt, bool all) {
   typedef PageRankFlags Flags;
   float t;
   auto r1 = pageRank(t, g, gt);
-  printf("[%07.1f ms] [%.4e] pageRank\n", t, absError(r1, r1)); if (all) print(r1);
+  printf("[%07.3f ms] [%.4e] pageRank\n", t, absError(r1, r1)); if (all) print(r1);
   for (int o=0; o<128; o++)
     runPageRankCuda(g, gt, all, Flags(o), r1);
   for (int o=0; o<128; o++)
