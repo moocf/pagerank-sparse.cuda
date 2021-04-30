@@ -1,20 +1,11 @@
 const fs = require('fs');
 const os = require('os');
-const path = require('path');
 
 const RGRAPH  = /Loading\s+graph\s+(\S+\/([^\/]*?).mtx)\s+\.\.\./;
-const RORDER = /^order:\s*(\d+)\s+size:\s*(\d+)/;
+const RORDER =  /order:\s*(\d+)\s+size:\s*(\d+)/;
 const RRESULT = /\[(\S*)\s+ms\]\s+\[(\S*)\]\s+(\S*)(?:\s+\{(\S*)\}\s+\{(.*)\})?/;
 
 
-
-
-function makeObject(ks, vs) {
-  var a = {};
-  for (var i=0, I=ks.length; i<I; i++)
-    a[ks[i]] = vs[i];
-  return a;
-}
 
 
 function readFile(pth) {
@@ -26,19 +17,6 @@ function readFile(pth) {
 function writeFile(pth, d) {
   d = d.replace(/\r?\n/g, os.EOL);
   fs.writeFileSync(pth, d);
-}
-
-
-function readCsv(pth) {
-  var d = readFile(pth);
-  var ls = d.split(/\n/g).map(l => l.trim());
-  var cs = ls[0].split(','), a = [];
-  for (var l of ls.slice(1)) {
-    if (!l) continue;
-    var r = makeObject(cs, l.split(','));
-    a.push(r);
-  }
-  return a;
 }
 
 
@@ -54,17 +32,6 @@ function writeCsv(pth, rs, cs) {
 }
 
 
-function parseReference(rs) {
-  var a = new Map();
-  for (var r of rs) {
-    var name = r.name;
-    var time_nvgraph = parseFloat(r.time_nvgraph);
-    a.set(name, {name, time_nvgraph});
-  }
-  return a;
-}
-
-
 function resultConfig(fn, mode, flags) {
   if (fn === 'pageRank')        return 'cpu';
   if (fn === 'pageRankNvgraph') return 'nvgraph';
@@ -73,14 +40,14 @@ function resultConfig(fn, mode, flags) {
 }
 
 
-function parseLog(m, pth) {
+function parseLog(pth) {
   var d = readFile(pth);
   var ls = d.split(/\n/g).map(l => l.trim());
   var a = new Map(), g = null;
   for (var l of ls) {
     if (RGRAPH.test(l)) {
       var [,, name] = l.match(RGRAPH);
-      g = m.get(name);
+      g = {name};
     }
     else if (RORDER.test(l)) {
       var [, order, size] = l.match(RORDER);
@@ -91,12 +58,11 @@ function parseLog(m, pth) {
       var [, time, error, fn, mode, flags] = l.match(RRESULT);
       var r      = {};
       r.graph    = g.name;
+      r.vertices = g.order;
+      r.edges    = g.size;
       r.config   = resultConfig(fn, mode, flags);
       r.error    = parseFloat(error);
-      r.time_nvgraph = g.time_nvgraph;
-      r.time         = parseFloat(time);
-      r.speedup      = g.time_nvgraph/r.time;
-      r.speedupf     = r.speedup * (g.order + g.size);
+      r.time     = parseFloat(time);
       if (!a.has(r.graph)) a.set(r.graph, []);
       a.get(r.graph).push(r);
     }
@@ -108,6 +74,12 @@ function parseLog(m, pth) {
 function postProcess(m) {
   var a = [];
   for (var rs of m.values()) {
+    var time_nvgraph = rs.find(r => r.config==='nvgraph').time;
+    for (var r of rs) {
+      r.time_nvgraph = time_nvgraph;
+      r.speedup      = time_nvgraph/r.time;
+      r.speedupf     = r.speedup * (r.vertices + r.edges);
+    }
     rs.sort((r, s) => r.time - s.time);
     a.push(...rs);
   }
@@ -116,12 +88,9 @@ function postProcess(m) {
 
 
 function main(a) {
-  var [,, logfile, csvfile] = a;
-  var reffile = path.join(__dirname, 'reference.csv');
-  var ref = readCsv(reffile);
-  var grp = parseReference(ref);
-  var log = parseLog(grp, logfile);
-  var rs  = postProcess(log);
-  writeCsv(csvfile, rs);
+  var [,, log, csv] = a;
+  var rs = parseLog(log);
+  var rs = postProcess(rs);
+  writeCsv(csv, rs);
 }
 main(process.argv);
