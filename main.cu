@@ -19,7 +19,7 @@ void runPageRankPush(G& x, H& xt, bool all) {
 
 
 template <class G, class H, class C, class D>
-void runPageRankCuda(G& x, H& xt, C& cs, C& id, C& ch, bool all, PageRankFlags F, D& r1) {
+void runPageRankCuda(G& x, H& xt, H& xe, H& xf, C& cs, C& id, C& ch, bool all, PageRankFlags F, D& r1) {
   typedef PageRankMode Mode; float t;
   if (!isValid(F)) return;
   auto r2 = pageRankCuda(t, x, xt, cs, id, ch, {Mode::BLOCK, F});
@@ -33,7 +33,7 @@ void runPageRankCuda(G& x, H& xt, C& cs, C& id, C& ch, bool all, PageRankFlags F
 
 
 template <class G, class H, class C, class D>
-void runPageRankSteppedCuda(G& x, H& xt, C& cs, C& id, C& ch, bool all, PageRankFlags F, D& r1) {
+void runPageRankSteppedCuda(G& x, H& xt, H& xe, H& xf, C& cs, C& id, C& ch, bool all, PageRankFlags F, D& r1) {
   typedef PageRankMode Mode; float t;
   if (!isValid(F) || !isValidStepped(F)) return;
   auto r5 = pageRankSteppedCuda(t, x, xt, cs, id, ch, {Mode::BLOCK, F});
@@ -49,18 +49,21 @@ void runPageRankSteppedCuda(G& x, H& xt, C& cs, C& id, C& ch, bool all, PageRank
 template <class G>
 void runPageRank(G& x, bool all) {
   typedef PageRankFlags Flags; float t;
+  int GB = GRID_DIM * BLOCK_DIM;
   auto xt = transposeWithDegree(x); print(xt); printf(" (transposeWithDegree)\n");
   auto xn = transposeForNvgraph(x); print(xn); printf(" (transposeForNvgraph)\n");
-  auto cs = components(x, xt);   auto de = deadEnds(x);
-  printf("components: %zu deadEnds: %zu\n", cs.size(), de.size());
-  auto id = inIdenticals(x, xt); auto ch = chains(x, xt);
-  printf("inIdenticals: %zu chains: %zu\n", id.size(), ch.size());
+  auto cs = components(x, xt); auto ds = joinUntilSize(cs, GB);
+  auto xe = crossEdges(xt, ds);     print(xe); printf(" (crossEdges)\n");
+  auto xf = edgeDifference(xt, xe); print(xf); printf(" (crossEdgesFree)\n");
+  auto de = deadEnds(x); auto id = inIdenticals(x, xt); auto ch = chains(x, xt);
+  printf("components: %zu largeComponents: %zu\n", cs.size(), ds.size());
+  printf("deadEnds: %zu inIdenticals: %zu chains: %zu\n", de.size(), id.size(), ch.size());
   auto r1 = pageRankNvgraph(t, xn);
   printf("[%09.3f ms] [%.4e] pageRankNvgraph\n", t, absError(r1, r1)); if (all) println(r1);
   for (int o=0; o<128; o++)
-    runPageRankCuda(x, xt, cs, id, ch, all, Flags(o), r1);
+    runPageRankCuda(x, xt, xe, xf, cs, id, ch, all, Flags(o), r1);
   for (int o=0; o<128; o++)
-    runPageRankSteppedCuda(x, xt, cs, id, ch, all, Flags(o), r1);
+    runPageRankSteppedCuda(x, xt, xe, xf,cs, id, ch, all, Flags(o), r1);
 }
 
 

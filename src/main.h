@@ -29,6 +29,8 @@
 #include "identicals.h"
 #include "chains.h"
 #include "deadEnds.h"
+#include "crossEdges.h"
+#include "difference.h"
 #include "pageRank.h"
 #include "pageRankPush.h"
 #include "pageRankStepped.h"

@@ -16,9 +16,16 @@ void setFrom(C& a, I&& x) {
   a.insert(x.begin(), x.end());
 }
 
+template <class C>
+auto setFrom(C& x) {
+  using T = typename C::value_type;
+  set<T> a; setFrom(a, x);
+  return a;
+}
+
 template <class I>
 auto setFrom(I&& x) {
-  using T = typename std::iterator_traits<I>::value_type;
+  using T = typename I::value_type;
   set<T> a; setFrom(a, x);
   return a;
 }
