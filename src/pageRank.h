@@ -112,7 +112,7 @@ void pageRankFactor(C& a, G& x, T p) {
 
 
 template <class G, class C, class T>
-void pageRankStep(C& a, C& c, G& x, T c0) {
+void pageRankOnce(C& a, C& c, G& x, T c0) {
   for (auto v : x.vertices())
     a[v] = c0 + sumAt(c, x.edges(v));
 }
@@ -127,7 +127,7 @@ auto& pageRankLoop(C& a, C& r, C& f, C& c, G& x, T p, T E) {
   while (1) {
     T c0 = pageRankTeleport(r, x, p, N);
     multiply(c, r, f);
-    pageRankStep(a, c, x, c0);
+    pageRankOnce(a, c, x, c0);
     T e1 = absError(a, r);
     if (e1 < E || e1 == e0) break;
     swap(a, r);

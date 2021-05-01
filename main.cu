@@ -63,7 +63,7 @@ void runPageRank(G& x, bool all) {
   for (int o=0; o<256; o++)
     runPageRankCuda(x, xt, xe, xf, cs, id, ch, all, Flags(o), r1);
   for (int o=0; o<256; o++)
-    runPageRankSteppedCuda(x, xt, xe, xf,cs, id, ch, all, Flags(o), r1);
+    runPageRankSteppedCuda(x, xt, xe, xf, cs, id, ch, all, Flags(o), r1);
 }
 
 
