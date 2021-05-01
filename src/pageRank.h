@@ -321,7 +321,7 @@ __global__ void pageRankSpecialKernel(T *a, T *r, int *vroot, int *vdist, T c0, 
 
 
 template <class T>
-__global__ void pageRankBlockKernel(T *a, T *r, T *c, int *vfrom, int *efrom, T c0, bool fSC, int i, int n) {
+__global__ void pageRankBlockKernel(T *a, T *q, T *r, T *c, int *vfrom, int *efrom, T c0, bool fSC, int i, int n) {
   DEFINE(t, b, B, G);
   __shared__ T cache[BLOCK_DIM];
 
@@ -332,13 +332,13 @@ __global__ void pageRankBlockKernel(T *a, T *r, T *c, int *vfrom, int *efrom, T 
     int ideg = abs(vfrom[v+1])-abs(vfrom[v]);
     cache[t] = sumAtKernelLoop(c, efrom+ebgn, ideg, t, B);
     sumKernelReduce(cache, B, t);
-    if (t == 0) a[v] = c0 + cache[0];
+    if (t == 0) a[v] = c0 + (q? q[v]:0) + cache[0];
   }
 }
 
 
 template <class T>
-__global__ void pageRankThreadKernel(T *a, T *r, T *c, int *vfrom, int *efrom, T c0, bool fSC, int i, int n) {
+__global__ void pageRankThreadKernel(T *a, T *q, T *r, T *c, int *vfrom, int *efrom, T c0, bool fSC, int i, int n) {
   DEFINE(t, b, B, G);
 
   for (int v=i+B*b+t, V=i+n; v<V; v+=G*B) {
@@ -346,7 +346,7 @@ __global__ void pageRankThreadKernel(T *a, T *r, T *c, int *vfrom, int *efrom, T
     if (pageRankKernelIsVertexSpecial(vfrom, v)) continue;
     int ebgn = abs(vfrom[v]);
     int ideg = abs(vfrom[v+1])-abs(vfrom[v]);
-    a[v] = c0 + sumAtKernelLoop(c, efrom+ebgn, ideg, 0, 1);
+    a[v] = c0 + (q? q[v]:0) + sumAtKernelLoop(c, efrom+ebgn, ideg, 0, 1);
   }
 }
 
@@ -357,26 +357,26 @@ __global__ void pageRankThreadKernel(T *a, T *r, T *c, int *vfrom, int *efrom, T
 // -------------------------------
 
 template <class T>
-void pageRankBlockKernelCall(T *a, T *r, T *c, int *vfrom, int *efrom, T c0, bool fSC, int i, int n) {
+void pageRankBlockKernelCall(T *a, T *q, T *r, T *c, int *vfrom, int *efrom, T c0, bool fSC, int i, int n) {
   int B = BLOCK_DIM;
   int G = min(n, GRID_DIM);
-  pageRankBlockKernel<<<G, B>>>(a, r, c, vfrom, efrom, c0, fSC, i, n);
+  pageRankBlockKernel<<<G, B>>>(a, q, r, c, vfrom, efrom, c0, fSC, i, n);
 }
 
 
 template <class T>
-void pageRankThreadKernelCall(T *a, T *r, T *c, int *vfrom, int *efrom, T c0, bool fSC, int i, int n) {
+void pageRankThreadKernelCall(T *a, T *q, T *r, T *c, int *vfrom, int *efrom, T c0, bool fSC, int i, int n) {
   int B = BLOCK_DIM;
   int G = min(ceilDiv(n, B), GRID_DIM);
-  pageRankThreadKernel<<<G, B>>>(a, r, c, vfrom, efrom, c0, fSC, i, n);
+  pageRankThreadKernel<<<G, B>>>(a, q, r, c, vfrom, efrom, c0, fSC, i, n);
 }
 
 
 template <class T, class I>
-void pageRankKernelWave(T *a, T *r, T *c, int *vfrom, int *efrom, T c0, bool fSC, int i, I&& ns) {
+void pageRankKernelWave(T *a, T *q, T *r, T *c, int *vfrom, int *efrom, T c0, bool fSC, int i, I&& ns) {
   for (int n : ns) {
-    if (n > 0) pageRankBlockKernelCall (a, r, c, vfrom, efrom, c0, fSC, i, n);
-    else       pageRankThreadKernelCall(a, r, c, vfrom, efrom, c0, fSC, i, -n);
+    if (n > 0) pageRankBlockKernelCall (a, q, r, c, vfrom, efrom, c0, fSC, i, n);
+    else       pageRankThreadKernelCall(a, q, r, c, vfrom, efrom, c0, fSC, i, -n);
     i += abs(n);
   }
 }
@@ -387,7 +387,7 @@ void pageRankKernelWave(T *a, T *r, T *c, int *vfrom, int *efrom, T c0, bool fSC
 // PAGE-RANK (CUDA)
 
 template <class T, class I>
-T* pageRankCudaLoop(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int *vfromD, int *efromD, int *vdataD, int *vrootD, int *vdistD, int i, I&& ns, int n, int N, T p, T E, bool fSC) {
+T* pageRankCudaLoop(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, T *qD, int *vfromD, int *efromD, int *vdataD, int *vrootD, int *vdistD, int i, I&& ns, int n, int N, T p, T E, bool fSC) {
   int B = BLOCK_DIM;
   int G = min(ceilDiv(n, B), GRID_DIM);
   int H = min(ceilDiv(N, B), GRID_DIM);
@@ -402,7 +402,7 @@ T* pageRankCudaLoop(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int 
     multiplyKernel<<<G, B>>>(cD+i, rD+i, fD+i,   n);
     TRY( cudaMemcpy(r0, r0D, H1, cudaMemcpyDeviceToHost) );
     T c0 = (1-p)/N + p*sum(r0, G)/N;
-    pageRankKernelWave(aD, rD, cD, vfromD, efromD, c0, _fSC, i, ns);
+    pageRankKernelWave(aD, qD, rD, cD, vfromD, efromD, c0, _fSC, i, ns);
     if (vrootD) pageRankSpecialKernel<<<G, B>>>(aD, rD, vrootD, vdistD, c0, p, i, n);
     absErrorKernel<<<G, B>>>(eD, rD, aD, N);
     TRY( cudaMemcpy(e, eD, G1, cudaMemcpyDeviceToHost) );
@@ -422,7 +422,7 @@ T* pageRankCudaCore(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int 
   int G = min(ceilDiv(N, B), GRID_DIM);
   fillKernel<<<G, B>>>(rD, N, T(1)/N);
   pageRankFactorKernel<<<G, B>>>(fD, vdataD, p, N);
-  return pageRankCudaLoop(e, r0, eD, r0D, aD, cD, rD, fD, vfromD, efromD, vdataD, vrootD, vdistD, 0, ns, N, N, p, E, fSC);
+  return pageRankCudaLoop(e, r0, eD, r0D, aD, cD, rD, fD, (T*) nullptr, vfromD, efromD, vdataD, vrootD, vdistD, 0, ns, N, N, p, E, fSC);
 }
 
 
@@ -466,7 +466,7 @@ auto pageRankCuda(float& t, G& x, H& xt, C& xcs, C& xid, C& xch, PageRankOptions
   int *vfromD, *efromD, *vdataD;
   int *vrootD = NULL, *vdistD = NULL;
   cudaStream_t s1, s2, s3;
-  TRY( cudaProfilerStart() );
+  // TRY( cudaProfilerStart() );
   TRY( cudaStreamCreate(&s1) );
   TRY( cudaStreamCreate(&s2) );
   TRY( cudaStreamCreate(&s3) );
@@ -510,7 +510,7 @@ auto pageRankCuda(float& t, G& x, H& xt, C& xcs, C& xid, C& xch, PageRankOptions
   TRY( cudaStreamDestroy(s1) );
   TRY( cudaStreamDestroy(s2) );
   TRY( cudaStreamDestroy(s3) );
-  TRY( cudaProfilerStop() );
+  // TRY( cudaProfilerStop() );
   return vertexContainer(xt, a, ks);
 }
 

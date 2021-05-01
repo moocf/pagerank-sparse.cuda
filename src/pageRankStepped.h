@@ -15,6 +15,8 @@
 #include "components.h"
 #include "blockgraph.h"
 #include "sort.h"
+#include "crossEdges.h"
+#include "difference.h"
 #include "pageRank.h"
 
 
@@ -40,7 +42,7 @@ template <class T, class I>
 T* pageRankSteppedCudaStep(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int *vfromD, int *efromD, int *vdataD, int *vrootD, int *vdistD, int i, I&& ls, int n, int N, T p, T E, bool fSC) {
   for (auto ns : ls) {
     int n = sumAbs(ns);
-    T *bD = pageRankCudaLoop(e, r0, eD, r0D, aD, cD, rD, fD, vfromD, efromD, vdataD, vrootD, vdistD, i, ns, n, N, p, E, fSC);
+    T *bD = pageRankCudaLoop(e, r0, eD, r0D, aD, cD, rD, fD, (T*) nullptr, vfromD, efromD, vdataD, vrootD, vdistD, i, ns, n, N, p, E, fSC);
     if (bD != rD) swap(aD, rD);
     i += n;
   }
@@ -79,7 +81,7 @@ T* pageRankSteppedCudaCore(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *f
 
 
 template <class G, class H, class C, class T=float>
-auto pageRankSteppedCuda(float& t, G& x, H& xt, C& xcs, C& xid, C& xch, PageRankOptions<T> o=PageRankOptions<T>()) {
+auto pageRankSteppedCuda(float& t, G& x, H& xt, H& xe, H& xf, C& xcs, C& xid, C& xch, PageRankOptions<T> o=PageRankOptions<T>()) {
   using K = typename G::TKey;
   vector<vector<K>> ks0;
   auto M = o.mode;
@@ -120,7 +122,7 @@ auto pageRankSteppedCuda(float& t, G& x, H& xt, C& xcs, C& xid, C& xch, PageRank
   int *vfromD, *efromD, *vdataD;
   int *vrootD = NULL, *vdistD = NULL;
   cudaStream_t s1, s2, s3;
-  TRY( cudaProfilerStart() );
+  // TRY( cudaProfilerStart() );
   TRY( cudaStreamCreate(&s1) );
   TRY( cudaStreamCreate(&s2) );
   TRY( cudaStreamCreate(&s3) );
@@ -164,13 +166,17 @@ auto pageRankSteppedCuda(float& t, G& x, H& xt, C& xcs, C& xid, C& xch, PageRank
   TRY( cudaStreamDestroy(s1) );
   TRY( cudaStreamDestroy(s2) );
   TRY( cudaStreamDestroy(s3) );
-  TRY( cudaProfilerStop() );
+  // TRY( cudaProfilerStop() );
   return vertexContainer(xt, a, ks);
 }
 
 template <class G, class H, class T=float>
 auto pageRankSteppedCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
+  int GB = GRID_DIM * BLOCK_DIM;
   auto cs = components(x, xt);
+  auto ds = joinUntilSize(cs, GB);
+  auto xe = crossEdges(xt, ds);
+  auto xf = edgeDifference(xt, xe);
   auto id = inIdenticals(x, xt);
   auto ch = chains(x, xt);
   return pageRankSteppedCuda(t, x, xt, cs, id, ch, o);

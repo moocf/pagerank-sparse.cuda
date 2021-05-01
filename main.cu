@@ -36,12 +36,12 @@ template <class G, class H, class C, class D>
 void runPageRankSteppedCuda(G& x, H& xt, H& xe, H& xf, C& cs, C& id, C& ch, bool all, PageRankFlags F, D& r1) {
   typedef PageRankMode Mode; float t;
   if (!isValid(F) || !isValidStepped(F)) return;
-  auto r5 = pageRankSteppedCuda(t, x, xt, cs, id, ch, {Mode::BLOCK, F});
+  auto r5 = pageRankSteppedCuda(t, x, xt, xe, xf, cs, id, ch, {Mode::BLOCK, F});
   printf("[%09.3f ms] [%.4e] pageRankSteppedCuda {block}    ", t, absError(r1, r5)); cout << stringify(F) << "\n"; if (all) println(r5);
-  auto r6 = pageRankSteppedCuda(t, x, xt, cs, id, ch, {Mode::THREAD, F});
+  auto r6 = pageRankSteppedCuda(t, x, xt, xe, xf, cs, id, ch, {Mode::THREAD, F});
   printf("[%09.3f ms] [%.4e] pageRankSteppedCuda {thread}   ", t, absError(r1, r6)); cout << stringify(F) << "\n"; if (all) println(r6);
   if (!isValidSwitched(F)) return;
-  auto r7 = pageRankSteppedCuda(t, x, xt, cs, id, ch, {Mode::SWITCHED, F});
+  auto r7 = pageRankSteppedCuda(t, x, xt, xe, xf, cs, id, ch, {Mode::SWITCHED, F});
   printf("[%09.3f ms] [%.4e] pageRankSteppedCuda {switched} ", t, absError(r1, r7)); cout << stringify(F) << "\n"; if (all) println(r7);
 }
 
