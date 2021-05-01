@@ -1,5 +1,6 @@
 #pragma once
 #include <string>
+#include "write.h"
 #include "pageRank.h"
 
 using std::string;
@@ -7,7 +8,6 @@ using std::string;
 
 
 
-// Prints page rank mode.
 const char* stringify(PageRankMode x) {
   typedef PageRankMode Mode;
   switch (x) {
@@ -19,7 +19,6 @@ const char* stringify(PageRankMode x) {
 }
 
 
-// Prints page rank flags.
 auto stringify(PageRankFlags& x) {
   string a = "{";
   a += x.splitComponents?  'S':' ';

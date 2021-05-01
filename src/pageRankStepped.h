@@ -16,7 +16,6 @@
 #include "blockgraph.h"
 #include "sort.h"
 #include "pageRank.h"
-#include "print.h"
 
 
 
@@ -79,9 +78,10 @@ T* pageRankSteppedCudaCore(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *f
 }
 
 
-template <class G, class H, class T=float>
-auto pageRankSteppedCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
+template <class G, class H, class C, class T=float>
+auto pageRankSteppedCuda(float& t, G& x, H& xt, C& xcs, C& xid, C& xch, PageRankOptions<T> o=PageRankOptions<T>()) {
   using K = typename G::TKey;
+  vector<vector<K>> ks0;
   auto M = o.mode;
   auto F = o.flags;
   auto p = o.damping;
@@ -91,9 +91,9 @@ auto pageRankSteppedCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOpt
   bool fSC = F.skipConverged;
   bool fRI = F.removeIdenticals;
   bool fRC = F.removeChains;
-  auto ch = fRC? chains(x, xt)       : vector<vector<K>>();
-  auto id = fRI? inIdenticals(x, xt) : vector<vector<K>>();
-  auto cs = pageRankComponents(x, xt, ch, id, M, F);
+  auto& ch = fRC? xch : ks0;
+  auto& id = fRI? xid : ks0;
+  auto cs = pageRankComponents(x, xt, xcs, ch, id, M, F);
   auto ls = pageRankWaves(xt, cs, M);
   auto ks = join(cs);
   auto vfrom = sourceOffsets(xt, ks);
@@ -166,4 +166,12 @@ auto pageRankSteppedCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOpt
   TRY( cudaStreamDestroy(s3) );
   TRY( cudaProfilerStop() );
   return vertexContainer(xt, a, ks);
+}
+
+template <class G, class H, class T=float>
+auto pageRankSteppedCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
+  auto cs = components(x, xt);
+  auto id = inIdenticals(x, xt);
+  auto ch = chains(x, xt);
+  return pageRankSteppedCuda(t, x, xt, cs, id, ch, o);
 }

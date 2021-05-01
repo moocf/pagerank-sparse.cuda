@@ -1,76 +1,56 @@
-#pragma once
-#include <vector>
-#include <unordered_map>
 #include <iostream>
-#include "_support.h"
-#include "DiGraph.h"
+#include "write.h"
 
-using std::vector;
-using std::unordered_map;
 using std::cout;
 
 
 
-// Prints 1D array.
-template <class T>
-void print(T *x, int N) {
-  cout << "{";
-  for (int i=0; i<N; i++)
-    cout << " " << x[i];
-  cout << " }\n";
-}
+
+// PRINT
+// -----
 
 template <class T>
-void print(vector<T>& x) {
-  print(x.data(), x.size());
-}
+void print(T *x, int N) { write(cout, x, N); }
+
+template <class T>
+void print(vector<T>& x) { write(cout, x); }
 
 template <class K, class T>
-void print(unordered_map<K, T>& x) {
-  cout << "{\n";
-  for (auto& p : x)
-    cout << "  " << p.first << " => " << p.second << "\n";
-  cout << "}\n";
-}
+void print(ostream& a, unordered_map<K, T>& x) { write(cout, x); }
 
-
-
-
-// Prints 2D array.
-template <class T>
-void print(T *x, int R, int C) {
-  cout << "{\n";
-  for (int r=0; r<R; r++) {
-    for (int c=0; c<C; c++)
-      cout << "  " << GET2D(x, r, c, C);
-    cout << "\n";
-  }
-  cout << "}\n";
-}
 
 template <class T>
-void print(vector<vector<T>>& x) {
-  cout << "{\n";
-  for (auto& xi : x) {
-    cout << "  "; print(xi);
-  }
-  cout << "}\n";
-}
+void print(T *x, int R, int C) { write(cout, x, R, C); }
+
+template <class T>
+void print(vector<vector<T>>& x) { write(cout, x); }
 
 
-
-
-// Prints graph.
 template <class G>
-void print(G& x, bool all=false) {
-  cout << "order: " << x.order() << " size: " << x.size();
-  if (!all) { cout << " {}\n"; return; }
-  cout << " {\n";
-  for (auto u : x.vertices()) {
-    cout << "  " << u << " ->";
-    for (auto v : x.edges(u))
-      cout << " " << v;
-    cout << "\n";
-  }
-  cout << "}\n";
-}
+void print(G& x, bool all=false) { write(cout, x, all); }
+
+
+
+
+// PRINTLN
+// -------
+
+template <class T>
+void println(T *x, int N) { print(x, N); cout << "\n"; }
+
+template <class T>
+void println(vector<T>& x) { print(x); cout << "\n"; }
+
+template <class K, class T>
+void println(unordered_map<K, T>& x) { print(x); cout << "\n"; }
+
+
+template <class T>
+void println(T *x, int R, int C) { print(x, R, C); cout << "\n"; }
+
+template <class T>
+void println(vector<vector<T>>& x) { print(x); cout << "\n"; }
+
+
+template <class G>
+void println(G& x, bool all=false) { print(x, all); cout << "\n"; }

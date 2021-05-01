@@ -27,7 +27,6 @@
 #include "sort.h"
 #include "chains.h"
 #include "identicals.h"
-#include "print.h"
 
 using std::vector;
 using std::unordered_map;
@@ -163,12 +162,12 @@ auto pageRank(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) 
 // PAGE-RANK HELPERS
 // -----------------
 
-template <class G, class K, class C>
-void pageRankSortComponents(C& a, G& xt, vector<vector<K>>& ch, vector<vector<K>>& id) {
+template <class G, class C, class D>
+void pageRankSortComponents(D& a, G& xt, C& ch, C& id) {
   auto chs = setFrom(ch, 1);
   auto ids = setFrom(id, 1);
   for (auto& c : a) {
-    sort(c.begin(), c.end(), [&](K u, K v) {
+    sort(c.begin(), c.end(), [&](auto u, auto v) {
       int du = ids.count(u) || chs.count(u)? -ids.count(u) : xt.degree(u);
       int dv = ids.count(v) || chs.count(v)? -ids.count(v) : xt.degree(v);
       return du < dv;
@@ -177,20 +176,21 @@ void pageRankSortComponents(C& a, G& xt, vector<vector<K>>& ch, vector<vector<K>
 }
 
 
-template <class G, class H, class K>
-auto pageRankComponents(G& x, H& xt, vector<vector<K>>& ch, vector<vector<K>>& id, PageRankMode M, PageRankFlags F) {
+template <class G, class H, class C>
+auto pageRankComponents(G& x, H& xt, C& cs, C& ch, C& id, PageRankMode M, PageRankFlags F) {
+  using K = typename G::TKey;
   typedef PageRankMode Mode;
-  vector<vector<K>> cs;
+  vector<vector<K>> a;
   int n0 = F.largeComponents? GRID_DIM * BLOCK_DIM : 0;
-  if (F.splitComponents) cs = components(x, xt, n0);
-  else cs.push_back(vertices(x));
-  if (F.orderVertices || M == Mode::SWITCHED) pageRankSortComponents(cs, xt, ch, id);
+  if (F.splitComponents) a = joinUntilSize(cs, n0);
+  else a.push_back(vertices(x));
+  if (F.orderVertices || M == Mode::SWITCHED) pageRankSortComponents(a, xt, ch, id);
   if (F.orderComponents) {
-    auto b = blockgraph(x, cs);
+    auto b = blockgraph(x, a);
     auto bks = sort(b);
-    reorder(cs, bks);
+    reorder(a, bks);
   }
-  return cs;
+  return a;
 }
 
 
@@ -426,9 +426,10 @@ T* pageRankCudaCore(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int 
 }
 
 
-template <class G, class H, class T=float>
-auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
+template <class G, class H, class C, class T=float>
+auto pageRankCuda(float& t, G& x, H& xt, C& xcs, C& xid, C& xch, PageRankOptions<T> o=PageRankOptions<T>()) {
   using K = typename G::TKey;
+  vector<vector<K>> ks0;
   auto M = o.mode;
   auto F = o.flags;
   auto p = o.damping;
@@ -436,9 +437,9 @@ auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>
   bool fSC = F.skipConverged;
   bool fRI = F.removeIdenticals;
   bool fRC = F.removeChains;
-  auto ch = fRC? chains(x, xt)       : vector<vector<K>>();
-  auto id = fRI? inIdenticals(x, xt) : vector<vector<K>>();
-  auto cs = pageRankComponents(x, xt, ch, id, M, F);
+  auto& id = fRI? xid : ks0;
+  auto& ch = fRC? xch : ks0;
+  auto cs = pageRankComponents(x, xt, xcs, ch, id, M, F);
   auto ns = pageRankWave(xt, cs, M);
   auto ks = join(cs);
   auto vfrom = sourceOffsets(xt, ks);
@@ -511,6 +512,14 @@ auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>
   TRY( cudaStreamDestroy(s3) );
   TRY( cudaProfilerStop() );
   return vertexContainer(xt, a, ks);
+}
+
+template <class G, class H, class T=float>
+auto pageRankCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
+  auto cs = components(x, xt);
+  auto id = inIdenticals(x, xt);
+  auto ch = chains(x, xt);
+  return pageRankCuda(t, x, xt, cs, id, ch, o);
 }
 
 
