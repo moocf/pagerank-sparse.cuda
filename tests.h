@@ -576,7 +576,7 @@ const char* testPageRank() {
   if (absError(d, s2) >= E) return "pageRankMin5c";
   if (absError(e, t1) >= E) return "pageRankPushMinNv";
   if (absError(e, t2) >= E) return "pageRankMinNv";
-  for (int o=0; o<128; o++) {
+  for (int o=0; o<256; o++) {
     Flags F(o);
     if (!isValid(F)) continue;
     auto p3 = pageRankCuda(t, g, gt, {Mode::BLOCK, F});

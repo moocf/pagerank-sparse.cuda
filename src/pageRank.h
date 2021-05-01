@@ -52,16 +52,18 @@ struct PageRankFlags {
   bool largeComponents  = false;
   bool orderComponents  = false;
   bool orderVertices    = false;
+  bool crossPropagate   = false;
   bool removeIdenticals = false;
   bool removeChains     = false;
   bool skipConverged    = false;
 
   PageRankFlags() = default;
   PageRankFlags(int n) {
-    splitComponents  = n & 64;
-    largeComponents  = n & 32;
-    orderComponents  = n & 16;
-    orderVertices    = n & 8;
+    splitComponents  = n & 128;
+    largeComponents  = n & 64;
+    orderComponents  = n & 32;
+    orderVertices    = n & 16;
+    crossPropagate   = n & 8;
     removeIdenticals = n & 4;
     removeChains     = n & 2;
     skipConverged    = n & 1;

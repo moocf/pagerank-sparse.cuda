@@ -23,8 +23,9 @@ auto stringify(PageRankFlags& x) {
   string a = "{";
   a += x.splitComponents?  'S':' ';
   a += x.largeComponents?  'L':' ';
-  a += x.orderVertices?    'O':' ';
   a += x.orderComponents?  'T':' ';
+  a += x.orderVertices?    'O':' ';
+  a += x.crossPropagate?   'P':' ';
   a += x.removeIdenticals? 'I':' ';
   a += x.removeChains?     'C':' ';
   a += x.skipConverged?    'D':' ';

@@ -5,15 +5,19 @@
 
 
 bool isValid(PageRankFlags x) {
-  return !(x.largeComponents || x.orderComponents) || x.splitComponents;
+  if ((x.largeComponents || x.orderComponents) && !x.splitComponents) return false;
+  if (x.crossPropagate) return false;
+  return true;
 }
 
 
 bool isValidSwitched(PageRankFlags x) {
-  return !x.splitComponents || x.largeComponents;
+  if (x.splitComponents && !x.largeComponents) return false;
+  return true;
 }
 
 
 bool isValidStepped(PageRankFlags x) {
-  return x.splitComponents && x.largeComponents && x.orderComponents;
+  if (!(x.splitComponents && x.largeComponents && x.orderComponents)) return false;
+  return true;
 }

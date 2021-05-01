@@ -35,7 +35,7 @@ void runPageRankCuda(G& x, H& xt, H& xe, H& xf, C& cs, C& id, C& ch, bool all, P
 template <class G, class H, class C, class D>
 void runPageRankSteppedCuda(G& x, H& xt, H& xe, H& xf, C& cs, C& id, C& ch, bool all, PageRankFlags F, D& r1) {
   typedef PageRankMode Mode; float t;
-  if (!isValid(F) || !isValidStepped(F)) return;
+  if (!isValidStepped(F)) return;
   auto r5 = pageRankSteppedCuda(t, x, xt, xe, xf, cs, id, ch, {Mode::BLOCK, F});
   printf("[%09.3f ms] [%.4e] pageRankSteppedCuda {block}    ", t, absError(r1, r5)); cout << stringify(F) << "\n"; if (all) println(r5);
   auto r6 = pageRankSteppedCuda(t, x, xt, xe, xf, cs, id, ch, {Mode::THREAD, F});
@@ -60,9 +60,9 @@ void runPageRank(G& x, bool all) {
   printf("deadEnds: %zu inIdenticals: %zu chains: %zu\n", de.size(), id.size(), ch.size());
   auto r1 = pageRankNvgraph(t, xn);
   printf("[%09.3f ms] [%.4e] pageRankNvgraph\n", t, absError(r1, r1)); if (all) println(r1);
-  for (int o=0; o<128; o++)
+  for (int o=0; o<256; o++)
     runPageRankCuda(x, xt, xe, xf, cs, id, ch, all, Flags(o), r1);
-  for (int o=0; o<128; o++)
+  for (int o=0; o<256; o++)
     runPageRankSteppedCuda(x, xt, xe, xf,cs, id, ch, all, Flags(o), r1);
 }
 
