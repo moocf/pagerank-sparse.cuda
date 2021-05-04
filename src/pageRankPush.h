@@ -24,26 +24,28 @@ void pageRankPushStep(C& a, C& r, G& x, T p) {
 
 
 template <class G, class C, class T>
-auto& pageRankPushCore(float& R, C& a, C& r, G& x, T p, T E) {
+auto& pageRankPushCore(float& m, C& a, C& r, G& x, T p, T E, int L) {
   T e0 = T();
   int N = x.order();
   fill(r, T(1)/N);
-  for (;; R++) {
+  int l = 0;
+  for (; l<L; l++) {
     pageRankPushStep(a, r, x, p);
     T e1 = absError(a, r);
     if (e1 < E || e1 == e0) break;
     swap(a, r);
     e0 = e1;
   }
-  fillAt(a, T(), x.nonVertices());
+  m += l;
   return a;
 }
 
 
 template <class G, class H, class T=float>
-auto pageRankPush(float& t, float& R, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
+auto pageRankPush(float& t, float& m, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
   auto a = x.vertexContainer(T());
-  auto r = x.vertexContainer(T());
-  t = measureDuration([&]() { pageRankPushCore(R, a, r, x, o.damping, o.convergence); });
+  auto r = x.vertexContainer(T()); m = 0;
+  t = measureDuration([&]() { pageRankPushCore(m, a, r, x, o.damping, o.convergence, o.maxIterations); });
+  fillAt(a, T(), x.nonVertices());
   return a;
 }

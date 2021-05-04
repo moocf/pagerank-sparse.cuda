@@ -78,12 +78,14 @@ struct PageRankOptions {
   Flags flags;
   T damping;
   T convergence;
+  int maxIterations;
 
-  PageRankOptions(Mode _mode=Mode::BLOCK, Flags _flags={}, T _damping=0.85, T _convergence=1e-6) {
+  PageRankOptions(Mode _mode=Mode::BLOCK, Flags _flags={}, T _damping=0.85, T _convergence=1e-6, int _maxIterations=10000) {
     mode = _mode;
     flags = _flags;
     damping = _damping;
     convergence = _convergence;
+    maxIterations = _maxIterations;
   }
 };
 
@@ -119,12 +121,13 @@ void pageRankOnce(C& a, C& c, G& x, T c0) {
 
 
 template <class G, class C, class T>
-auto& pageRankLoop(float& R, C& a, C& r, C& f, C& c, G& x, T p, T E) {
+auto& pageRankLoop(float& m, C& a, C& r, C& f, C& c, G& x, T p, T E, int L) {
   T e0 = T();
   int N = x.order();
   fillAt(r, T(1)/N, x.vertices());
   pageRankFactor(f, x, p);
-  for (;; R++) {
+  int l = 0;
+  for (; l<L; l++) {
     T c0 = pageRankTeleport(r, x, p, N);
     multiply(c, r, f);
     pageRankOnce(a, c, x, c0);
@@ -133,28 +136,30 @@ auto& pageRankLoop(float& R, C& a, C& r, C& f, C& c, G& x, T p, T E) {
     swap(a, r);
     e0 = e1;
   }
+  m += l;
   return a;
 }
 
 template <class G, class C, class T>
-auto& pageRankCore(float& R, C& a, C& r, C& f, C& c, G& x, T p, T E) {
-  int N = x.order(); R = 0;
+auto& pageRankCore(float& m, C& a, C& r, C& f, C& c, G& x, T p, T E, int L) {
+  int N = x.order(); m = 0;
   fillAt(r, T(1)/N, x.vertices());
   pageRankFactor(f, x, p);
-  return pageRankLoop(R, a, r, f, c, x, p, E);
+  return pageRankLoop(m, a, r, f, c, x, p, E, L);
   // fillAt(b, x.nonVertices(), T());
 }
 
 
 template <class G, class H, class T=float>
-auto pageRank(float& t, float& R, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
+auto pageRank(float& t, float& m, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
   auto p = o.damping;
   auto E = o.convergence;
+  auto L = o.maxIterations;
   auto a = xt.vertexContainer(T());
   auto r = xt.vertexContainer(T());
   auto f = xt.vertexContainer(T());
   auto c = xt.vertexContainer(T());
-  t = measureDuration([&]() { pageRankCore(R, a, r, f, c, xt, p, E); });
+  t = measureDuration([&]() { pageRankCore(m, a, r, f, c, xt, p, E, L); });
   return a;
 }
 
@@ -389,7 +394,7 @@ void pageRankKernelWave(T *a, T *q, T *r, T *c, int *vfrom, int *efrom, T c0, bo
 // PAGE-RANK (CUDA)
 
 template <class T, class I>
-T* pageRankCudaLoop(float& R, T *e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, T *qD, int *vfromD, int *efromD, int *vdataD, int *vrootD, int *vdistD, int i, I&& ns, int n, int N, T p, T E, bool fSC) {
+T* pageRankCudaLoop(float& m, T *e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, T *qD, int *vfromD, int *efromD, int *vdataD, int *vrootD, int *vdistD, int i, I&& ns, int n, int N, T p, T E, int L, bool fSC) {
   int B = BLOCK_DIM;
   int G = min(ceilDiv(n, B), GRID_DIM);
   int H = min(ceilDiv(N, B), GRID_DIM);
@@ -398,7 +403,7 @@ T* pageRankCudaLoop(float& R, T *e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T
   int SKIP = 4;
   T e0 = T();
   int l = 0;
-  for (;; l++) {
+  for (; l<L; l++) {
     bool _fSC = fSC && (l%SKIP > 0);
     sumIfNotKernel<<<H, B>>>(r0D,  rD,   vdataD, N);
     multiplyKernel<<<G, B>>>(cD+i, rD+i, fD+i,   n);
@@ -413,29 +418,30 @@ T* pageRankCudaLoop(float& R, T *e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T
     swap(aD, rD);
     e0 = e1;
   }
-  R += l*n/N;
+  m += (l*n)/N;
   return aD;
 }
 
 
 template <class T, class I>
-T* pageRankCudaCore(float& R, T *e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int *vfromD, int *efromD, int *vdataD, int *vrootD, int *vdistD, I&& ns, int N, T p, T E, bool fSC) {
-  int B = BLOCK_DIM; R = 0;
+T* pageRankCudaCore(float& m, T *e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int *vfromD, int *efromD, int *vdataD, int *vrootD, int *vdistD, I&& ns, int N, T p, T E, int L, bool fSC) {
+  int B = BLOCK_DIM; m = 0;
   int G = min(ceilDiv(N, B), GRID_DIM);
   fillKernel<<<G, B>>>(rD, N, T(1)/N);
   pageRankFactorKernel<<<G, B>>>(fD, vdataD, p, N);
-  return pageRankCudaLoop(R, e, r0, eD, r0D, aD, cD, rD, fD, (T*) nullptr, vfromD, efromD, vdataD, vrootD, vdistD, 0, ns, N, N, p, E, fSC);
+  return pageRankCudaLoop(m, e, r0, eD, r0D, aD, cD, rD, fD, (T*) nullptr, vfromD, efromD, vdataD, vrootD, vdistD, 0, ns, N, N, p, E, L, fSC);
 }
 
 
 template <class G, class H, class C, class T=float>
-auto pageRankCuda(float& t, float& R, G& x, H& xt, C& xcs, C& xid, C& xch, PageRankOptions<T> o=PageRankOptions<T>()) {
+auto pageRankCuda(float& t, float& m, G& x, H& xt, C& xcs, C& xid, C& xch, PageRankOptions<T> o=PageRankOptions<T>()) {
   using K = typename G::TKey;
   vector<vector<K>> ks0;
   auto M = o.mode;
   auto F = o.flags;
   auto p = o.damping;
   auto E = o.convergence;
+  auto L = o.maxIterations;
   bool fSC = F.skipConverged;
   bool fRI = F.removeIdenticals;
   bool fRC = F.removeChains;
@@ -493,7 +499,7 @@ auto pageRankCuda(float& t, float& R, G& x, H& xt, C& xcs, C& xid, C& xch, PageR
   if (fRI || fRC) TRY( cudaMemcpyAsync(vdistD, vdist.data(), VDIST1, cudaMemcpyHostToDevice, s1) );
   TRY( cudaStreamSynchronize(s1) );
 
-  t = measureDuration([&]() { bD = pageRankCudaCore(R, e, r0, eD, r0D, aD, cD, rD, fD, vfromD, efromD, vdataD, vrootD, vdistD, ns, N, p, E, fSC); });
+  t = measureDuration([&]() { bD = pageRankCudaCore(m, e, r0, eD, r0D, aD, cD, rD, fD, vfromD, efromD, vdataD, vrootD, vdistD, ns, N, p, E, L, fSC); });
   TRY( cudaMemcpy(a.data(), bD, N1, cudaMemcpyDeviceToHost) );
 
   TRY( cudaFree(eD) );
@@ -517,11 +523,11 @@ auto pageRankCuda(float& t, float& R, G& x, H& xt, C& xcs, C& xid, C& xch, PageR
 }
 
 template <class G, class H, class T=float>
-auto pageRankCuda(float& t, float& R, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
+auto pageRankCuda(float& t, float& m, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
   auto cs = components(x, xt);
   auto id = inIdenticals(x, xt);
   auto ch = chains(x, xt);
-  return pageRankCuda(t, R, x, xt, cs, id, ch, o);
+  return pageRankCuda(t, m, x, xt, cs, id, ch, o);
 }
 
 
