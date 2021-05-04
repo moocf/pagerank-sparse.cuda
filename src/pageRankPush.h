@@ -24,11 +24,11 @@ void pageRankPushStep(C& a, C& r, G& x, T p) {
 
 
 template <class G, class C, class T>
-auto& pageRankPushCore(C& a, C& r, G& x, T p, T E) {
+auto& pageRankPushCore(float& R, C& a, C& r, G& x, T p, T E) {
   T e0 = T();
   int N = x.order();
   fill(r, T(1)/N);
-  while (1) {
+  for (;; R++) {
     pageRankPushStep(a, r, x, p);
     T e1 = absError(a, r);
     if (e1 < E || e1 == e0) break;
@@ -41,9 +41,9 @@ auto& pageRankPushCore(C& a, C& r, G& x, T p, T E) {
 
 
 template <class G, class H, class T=float>
-auto pageRankPush(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
+auto pageRankPush(float& t, float& R, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
   auto a = x.vertexContainer(T());
   auto r = x.vertexContainer(T());
-  t = measureDuration([&]() { pageRankPushCore(a, r, x, o.damping, o.convergence); });
+  t = measureDuration([&]() { pageRankPushCore(R, a, r, x, o.damping, o.convergence); });
   return a;
 }

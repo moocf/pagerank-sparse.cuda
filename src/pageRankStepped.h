@@ -39,11 +39,11 @@ auto pageRankWaves(G& xt, vector<vector<K>>& cs, PageRankMode M) {
 // PAGE-RANK STEPPED (CUDA)
 
 template <class T, class I>
-T* pageRankSteppedCudaOnce(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, T *qD, int *vfromD, int *efromD, int *vcrosD, int *ecrosD, int *vdataD, int *vrootD, int *vdistD, int i, I&& ls, int n, int N, T p, T E, bool fSC) {
+T* pageRankSteppedCudaOnce(float& R, T *e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, T *qD, int *vfromD, int *efromD, int *vcrosD, int *ecrosD, int *vdataD, int *vrootD, int *vdistD, int i, I&& ls, int n, int N, T p, T E, bool fSC) {
   for (auto ns : ls) {
     int n = sumAbs(ns);
     if (qD) pageRankKernelWave(qD, (T*) nullptr, rD, cD, vcrosD, ecrosD, T(), false, i, ns);
-    T *bD = pageRankCudaLoop(e, r0, eD, r0D, aD, cD, rD, fD, qD, vfromD, efromD, vdataD, vrootD, vdistD, i, ns, n, N, p, E, fSC);
+    T *bD = pageRankCudaLoop(R, e, r0, eD, r0D, aD, cD, rD, fD, qD, vfromD, efromD, vdataD, vrootD, vdistD, i, ns, n, N, p, E, fSC);
     if (bD != rD) swap(aD, rD);
     i += n;
   }
@@ -52,7 +52,7 @@ T* pageRankSteppedCudaOnce(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *f
 
 
 template <class T, class I>
-T* pageRankSteppedCudaLoop(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int *vfromD, int *efromD, int *vdataD, int *vrootD, int *vdistD, int i, I&& ls, int n, int N, T p, T E, bool fSC, int d0) {
+T* pageRankSteppedCudaLoop(T *e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, int *vfromD, int *efromD, int *vdataD, int *vrootD, int *vdistD, int i, I&& ls, int n, int N, T p, T E, bool fSC, int d0) {
   int B = BLOCK_DIM;
   int G = min(ceilDiv(N, B), GRID_DIM);
   int G1 = G * sizeof(T);
@@ -72,18 +72,18 @@ T* pageRankSteppedCudaLoop(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *f
 
 
 template <class T, class I>
-T* pageRankSteppedCudaCore(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, T *qD, int *vfromD, int *efromD, int *vcrosD, int *ecrosD, int *vdataD, int *vrootD, int *vdistD, I&& ls, int N, T p, T E, bool fSC) {
+T* pageRankSteppedCudaCore(float& R, T *e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, T *qD, int *vfromD, int *efromD, int *vcrosD, int *ecrosD, int *vdataD, int *vrootD, int *vdistD, I&& ls, int N, T p, T E, bool fSC) {
   int B = BLOCK_DIM;
   int G = min(ceilDiv(N, B), GRID_DIM);
   fillKernel<<<G, B>>>(rD, N, T(1)/N);
   if (qD) fillKernel<<<G, B>>>(qD, N, T());
   pageRankFactorKernel<<<G, B>>>(fD, vdataD, p, N);
-  return pageRankSteppedCudaOnce(e, r0, eD, r0D, aD, cD, rD, fD, qD, vfromD, efromD, vcrosD, ecrosD, vdataD, vrootD, vdistD, 0, ls, N, N, p, E, fSC);
+  return pageRankSteppedCudaOnce(R, e, r0, eD, r0D, aD, cD, rD, fD, qD, vfromD, efromD, vcrosD, ecrosD, vdataD, vrootD, vdistD, 0, ls, N, N, p, E, fSC);
 }
 
 
 template <class G, class H, class C, class T=float>
-auto pageRankSteppedCuda(float& t, G& x, H& xt, H& xe, H& xf, C& xcs, C& xid, C& xch, PageRankOptions<T> o=PageRankOptions<T>()) {
+auto pageRankSteppedCuda(float& t, float& R, G& x, H& xt, H& xe, H& xf, C& xcs, C& xid, C& xch, PageRankOptions<T> o=PageRankOptions<T>()) {
   using K = typename G::TKey;
   vector<vector<K>> ks0;
   auto M = o.mode;
@@ -158,7 +158,7 @@ auto pageRankSteppedCuda(float& t, G& x, H& xt, H& xe, H& xf, C& xcs, C& xid, C&
   if (fRI || fRC) TRY( cudaMemcpyAsync(vdistD, vdist.data(), VDIST1, cudaMemcpyHostToDevice, s1) );
   TRY( cudaStreamSynchronize(s1) );
 
-  t = measureDuration([&]() { bD = pageRankSteppedCudaCore(e, r0, eD, r0D, aD, cD, rD, fD, qD, vfromD, efromD, vcrosD, ecrosD, vdataD, vrootD, vdistD, ls, N, p, E, fSC); });
+  t = measureDuration([&]() { bD = pageRankSteppedCudaCore(R, e, r0, eD, r0D, aD, cD, rD, fD, qD, vfromD, efromD, vcrosD, ecrosD, vdataD, vrootD, vdistD, ls, N, p, E, fSC); });
   TRY( cudaMemcpy(a.data(), bD, N1, cudaMemcpyDeviceToHost) );
 
   TRY( cudaFree(eD) );
@@ -185,7 +185,7 @@ auto pageRankSteppedCuda(float& t, G& x, H& xt, H& xe, H& xf, C& xcs, C& xid, C&
 }
 
 template <class G, class H, class T=float>
-auto pageRankSteppedCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
+auto pageRankSteppedCuda(float& t, float& R, G& x, H& xt, PageRankOptions<T> o=PageRankOptions<T>()) {
   int GB = GRID_DIM * BLOCK_DIM;
   auto cs = components(x, xt);
   auto ds = joinUntilSize(cs, GB);
@@ -193,5 +193,5 @@ auto pageRankSteppedCuda(float& t, G& x, H& xt, PageRankOptions<T> o=PageRankOpt
   auto xf = edgeDifference(xt, xe);
   auto id = inIdenticals(x, xt);
   auto ch = chains(x, xt);
-  return pageRankSteppedCuda(t, x, xt, cs, id, ch, o);
+  return pageRankSteppedCuda(t, R, x, xt, cs, id, ch, o);
 }
