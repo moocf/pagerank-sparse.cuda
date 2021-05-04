@@ -19,7 +19,7 @@
 
 #ifndef _REPEAT
 /** No. of times to repeat execution. */
-#define _REPEAT 10
+#define _REPEAT 1
 #endif
 
 

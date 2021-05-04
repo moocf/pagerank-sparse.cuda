@@ -27,6 +27,7 @@
 #include "sort.h"
 #include "chains.h"
 #include "identicals.h"
+#include <iostream>
 
 using std::vector;
 using std::unordered_map;
@@ -35,6 +36,7 @@ using std::swap;
 using std::pow;
 using std::min;
 using std::abs;
+using std::cout;
 
 
 
@@ -413,7 +415,7 @@ T* pageRankCudaLoop(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, T *q
     swap(aD, rD);
     e0 = e1;
   }
-  // printf("pageRankCudaLoop(): %d\n", l);
+  cout << "pageRankCudaLoop: l: " << l << " E: " << E << "\n";
   return aD;
 }
 

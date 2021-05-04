@@ -14,3 +14,12 @@ auto deadEnds(G& x) {
     if (x.degree(u)==0) a.push_back(u);
   return a;
 }
+
+
+
+
+template <class G>
+void loopDeadEnds(G& a) {
+  for (auto u : a.vertices())
+    if (a.degree(u)==0) a.addEdge(u, u);
+}

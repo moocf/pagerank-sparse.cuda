@@ -40,10 +40,14 @@ auto pageRankWaves(G& xt, vector<vector<K>>& cs, PageRankMode M) {
 
 template <class T, class I>
 T* pageRankSteppedCudaOnce(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, T *qD, int *vfromD, int *efromD, int *vcrosD, int *ecrosD, int *vdataD, int *vrootD, int *vdistD, int i, I&& ls, int n, int N, T p, T E, bool fSC) {
+  cout << "pageRankSteppedCudaOnce():\n";
+  cout << "ls: " << ls.size() << "\n";
   for (auto ns : ls) {
     int n = sumAbs(ns);
+    T En = E*n/N;
+    cout << "n: " << n << " N: " << N << " E: " << E << " En: " << En << "\n";
     if (qD) pageRankKernelWave(qD, (T*) nullptr, rD, cD, vcrosD, ecrosD, T(), false, i, ns);
-    T *bD = pageRankCudaLoop(e, r0, eD, r0D, aD, cD, rD, fD, qD, vfromD, efromD, vdataD, vrootD, vdistD, i, ns, n, N, p, E, fSC);
+    T *bD = pageRankCudaLoop(e, r0, eD, r0D, aD, cD, rD, fD, qD, vfromD, efromD, vdataD, vrootD, vdistD, i, ns, n, N, p, En, fSC);
     if (bD != rD) swap(aD, rD);
     i += n;
   }
@@ -58,7 +62,7 @@ T* pageRankSteppedCudaLoop(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *f
   int G1 = G * sizeof(T);
   T e0 = 0;
   while (1) {
-    T *bD = pageRankSticdCudaStep(e, r0, eD, r0D, aD, cD, rD, fD, vfromD, efromD, vdataD, i, ls, n, N, p, E, fSC);
+    T *bD = pageRankSticdCudaOnce(e, r0, eD, r0D, aD, cD, rD, fD, vfromD, efromD, vdataD, i, ls, n, N, p, E, fSC);
     if (bD != rD) swap(aD, rD);
     if (d0 == 0) break;
     absErrorKernel<<<G, B>>>(eD, rD, aD, N);
@@ -73,6 +77,7 @@ T* pageRankSteppedCudaLoop(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *f
 
 template <class T, class I>
 T* pageRankSteppedCudaCore(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *fD, T *qD, int *vfromD, int *efromD, int *vcrosD, int *ecrosD, int *vdataD, int *vrootD, int *vdistD, I&& ls, int N, T p, T E, bool fSC) {
+  cout << "pageRankSteppedCudaCore():\n";
   int B = BLOCK_DIM;
   int G = min(ceilDiv(N, B), GRID_DIM);
   fillKernel<<<G, B>>>(rD, N, T(1)/N);
@@ -85,6 +90,7 @@ T* pageRankSteppedCudaCore(T* e, T *r0, T *eD, T *r0D, T *aD, T *cD, T *rD, T *f
 template <class G, class H, class C, class T=float>
 auto pageRankSteppedCuda(float& t, G& x, H& xt, H& xe, H& xf, C& xcs, C& xid, C& xch, PageRankOptions<T> o=PageRankOptions<T>()) {
   using K = typename G::TKey;
+  cout << "pageRankSteppedCuda():\n";
   vector<vector<K>> ks0;
   auto M = o.mode;
   auto F = o.flags;

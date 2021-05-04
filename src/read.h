@@ -47,7 +47,6 @@ void readMtx(G& a, istream& s) {
     istringstream ls(ln);
     ls >> h0 >> h1 >> h2 >> h3 >> h4;
   }
-  cout << "h1: " << h1 << " h2: " << h2 << "\n";
   if (h1!="matrix" || h2!="coordinate") return;
   bool sym = h4=="symmetric" || h4=="skew-symmetric";
 
