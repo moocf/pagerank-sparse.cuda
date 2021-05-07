@@ -73,9 +73,9 @@ auto runPageRankDynamicMode(G& x, bool all, C& r1, int b, int m) {
   auto a  = copy(x); float t;
   int deg = int(x.size()/x.order());
   for (int i=0; i<b; i++) { switch(m) {
-    default: case 0: removeRandomEdgeIf(a, [&](auto u) { return true; }); break;
-    case 1: removeRandomEdgeIf(a, [&](auto u) { return a.degree(u) < deg; }); break;
-    case 2: removeRandomEdgeIf(a, [&](auto u) { return a.degree(u) > deg; }); break;
+    default: case 0: removeRandomEdge(a); break;
+    case 1: removeRandomEdge(a); break;
+    case 2: removeRandomEdge(a); break;
   } } print(a); printf(" (batch: %d; mode: %d)\n", b, m);
   auto an = transposeForNvgraph(a); print(an); printf(" (batch: %d; mode: %d; transposeForNvgraph)\n", b, m);
   auto r2 = pageRankNvgraph(t, an);
