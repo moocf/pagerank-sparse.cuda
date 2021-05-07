@@ -50,7 +50,7 @@ template <class G>
 void runPageRank(G& x, bool all) {
   typedef PageRankFlags Flags; float t;
   int GB = GRID_DIM * BLOCK_DIM;
-  loopDeadEnds(x);
+  loopDeadEnds(x); // DEBUG: remove this
   auto xt = transposeWithDegree(x); print(xt); printf(" (transposeWithDegree)\n");
   auto xn = transposeForNvgraph(x); print(xn); printf(" (transposeForNvgraph)\n");
   auto cs = components(x, xt); auto ds = joinUntilSize(cs, GB);
@@ -61,10 +61,43 @@ void runPageRank(G& x, bool all) {
   printf("deadEnds: %zu inIdenticals: %zu chains: %zu\n", de.size(), id.size(), ch.size());
   auto r1 = pageRankNvgraph(t, xn);
   printf("[%09.3f ms; %03dR] [%.4e] pageRankNvgraph\n", t, 0, absError(r1, r1)); if (all) println(r1);
-  for (int o=0; o<1; o++)
+  for (int o=0; o<1; o++) // DEBUG: o<256
     runPageRankCuda(x, xt, xe, xf, cs, id, ch, all, Flags(o), r1);
   for (int o=0; o<256; o++)
     runPageRankSteppedCuda(x, xt, xe, xf, cs, id, ch, all, Flags(o), r1);
+}
+
+
+template <class G, class C>
+auto runPageRankDynamicMode(G& x, bool all, C& r1, int b, int m) {
+  auto a  = copy(x); float t;
+  int deg = int(x.size()/x.order());
+  for (int i=0; i<b; i++) { switch(m) {
+    default: case 0: removeRandomEdgeIf(a, [&](auto u) { return true; }); break;
+    case 1: removeRandomEdgeIf(a, [&](auto u) { return a.degree(u) < deg; }); break;
+    case 2: removeRandomEdgeIf(a, [&](auto u) { return a.degree(u) > deg; }); break;
+  } } print(a); printf(" (batch: %d; mode: %d)\n", b, m);
+  auto an = transposeForNvgraph(a); print(an); printf(" (batch: %d; mode: %d; transposeForNvgraph)\n", b, m);
+  auto r2 = pageRankNvgraph(t, an);
+  printf("[%09.3f ms; %03dR] [%.4e] pageRankNvgraph\n", t, 0, absError(r2, r2)); if (all) println(r2);
+  auto r3 = pageRankNvgraph(t, an, &r1);
+  printf("[%09.3f ms; %03dR] [%.4e] pageRankNvgraphDynamic\n", t, 0, absError(r2, r3)); if (all) println(r3);
+}
+
+
+template <class G>
+void runPageRankDynamic(G& x, bool all) {
+  int BATCH_BEGIN  = 10, BATCH_END = int(0.1*x.size());
+  int BATCH_REPEAT = 10; float t;
+  auto xn = transposeForNvgraph(x); print(xn); printf(" (transposeForNvgraph)\n");
+  auto r1 = pageRankNvgraph(t, xn);
+  printf("[%09.3f ms; %03dR] [%.4e] pageRankNvgraph\n", t, 0, absError(r1, r1)); if (all) println(r1);
+  for (int b=BATCH_BEGIN; b<BATCH_END; b*=10) {
+    for (int r=0; r<BATCH_REPEAT; r++) {
+      for (int m=0; m<3; m++)
+        runPageRankDynamicMode(x, all, r1, b, m);
+    }
+  }
 }
 
 
@@ -74,7 +107,7 @@ int main(int argc, char **argv) {
   setupAll(); testAll();
   printf("Loading graph %s ...\n", file);
   auto x = readMtx(file); println(x);
-  runPageRank(x, all);
+  runPageRankDynamic(x, all);
   printf("\n");
   return 0;
 }

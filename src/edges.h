@@ -2,10 +2,13 @@
 #include <vector>
 #include <unordered_map>
 #include <algorithm>
+#include <cstdlib>
 
 using std::vector;
 using std::unordered_map;
 using std::sort;
+using std::rand;
+using std::min;
 
 
 
@@ -121,4 +124,29 @@ auto destinationIndices(G& x, C&& ks) {
 template <class G>
 auto destinationIndices(G& x) {
   return destinationIndices(x, x.vertices());
+}
+
+
+
+
+// REMOVE-RANDOM-EDGE
+// ------------------
+
+template <class G, class K>
+void removeRandomEdge(G& a, K u) {
+  if (a.degree(u) == 0) return;
+  K vi = rand() % a.degree(u); int i = 0;
+  for (auto v : a.edges(u))
+    if (i++ == vi) { a.removeEdge(u, v); break; }
+}
+
+
+template <class G, class F>
+void removeRandomEdgeIf(G& a, F fn) {
+  using K = typename G::TKey;
+  while (1) {
+    K u = rand() % a.span();
+    if (a.degree(u) == 0 || !fn(u)) continue;
+    removeRandomEdge(a, u); break;
+  }
 }
