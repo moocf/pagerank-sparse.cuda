@@ -32,3 +32,27 @@ auto stringify(PageRankFlags& x) {
   a += "}";
   return a;
 }
+
+
+
+
+string stringify(PageRankUpdateMode x) {
+  typedef PageRankUpdateMode Mode;
+  switch (x) {
+    default:
+    case Mode::RANDOM: return "{?}";
+    case Mode::DEGREE: return "{D}";
+    case Mode::RANK:   return "{R}";
+  }
+}
+
+
+string stringify(PageRankUpdateFlags& x) {
+  string a = "{";
+  a += x.addVertices?    'V':' ';
+  a += x.removeVertices? 'v':' ';
+  a += x.addEdges?       'E':' ';
+  a += x.removeEdges?    'e':' ';
+  a += "}";
+  return a;
+}

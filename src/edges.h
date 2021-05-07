@@ -142,11 +142,28 @@ void removeRandomEdge(G& a, K u) {
 
 
 template <class G, class F>
-void removeRandomEdgeIf(G& a, F fn) {
+void removeRandomEdge(G& a) {
   using K = typename G::TKey;
-  while (1) {
-    K u = rand() % a.span();
-    if (a.degree(u) == 0 || !fn(u)) continue;
-    removeRandomEdge(a, u); break;
+  K u = rand() % a.span();
+  removeRandomEdge(a, u);
+}
+
+
+template <class G>
+void removeRandomEdgeByDegree(G& a) {
+  int v = rand() % a.size(), n = 0;
+  for (auto u : a.vertices()) {
+    if (v > n+x.degree(u)) n += x.degree(u);
+    else { removeRandomEdge(a, u); break; }
+  }
+}
+
+
+template <class G, class T>
+void removeRandomEdgeByRank(G& a, vector<T>& r) {
+  T v = rand() / RAND_MAX, p = 0;
+  for (auto u : a.vertices()) {
+    if (v > p+r[u]) p += r[u];
+    else { removeRandomEdge(a, u); break; }
   }
 }
