@@ -10,13 +10,14 @@ using std::vector;
 
 
 template <class G>
-auto pageRankNvgraph(float& t, G& x, float p=0.85f, float E=1e-6f) {
+auto pageRankNvgraph(float& t, G& x, vector<float> *iranks=nullptr, float p=0.85f, float E=1e-6f) {
   nvgraphHandle_t     h;
   nvgraphGraphDescr_t g;
   struct nvgraphCSCTopology32I_st csc;
   vector<cudaDataType_t> vtype {CUDA_R_32F, CUDA_R_32F};
   vector<cudaDataType_t> etype {CUDA_R_32F};
   vector<float> ranks(x.order());
+  if (iranks) ranks = *iranks;
   auto ks    = vertices(x);
   auto vfrom = sourceOffsets(x);
   auto efrom = destinationIndices(x);
@@ -38,7 +39,7 @@ auto pageRankNvgraph(float& t, G& x, float p=0.85f, float E=1e-6f) {
   TRY_NVGRAPH( nvgraphSetVertexData(h, g, ranks.data(), 1) );
   TRY_NVGRAPH( nvgraphSetEdgeData  (h, g, edata.data(), 0) );
 
-  t = measureDuration([&]() { TRY_NVGRAPH( nvgraphPagerank(h, g, 0, &p, 0, 0, 1, E, 0) ); });
+  t = measureDuration([&]() { TRY_NVGRAPH( nvgraphPagerank(h, g, 0, &p, 0, !!iranks, 1, E, 0) ); });
   TRY_NVGRAPH( nvgraphGetVertexData(h, g, ranks.data(), 1) );
 
   TRY_NVGRAPH( nvgraphDestroyGraphDescr(h, g) );
