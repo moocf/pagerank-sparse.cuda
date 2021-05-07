@@ -22,6 +22,7 @@
 #include "dotProduct.h"
 #include "error.h"
 #include "read.h"
+#include "retry.h"
 #include "transpose.h"
 #include "dfs.h"
 #include "components.h"

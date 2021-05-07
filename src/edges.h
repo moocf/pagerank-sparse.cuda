@@ -161,7 +161,7 @@ void removeRandomEdgeByDegree(G& a) {
 
 template <class G, class T>
 void removeRandomEdgeByRank(G& a, vector<T>& r) {
-  T v = rand() / RAND_MAX, p = 0;
+  T v = T(rand()) / RAND_MAX, p = 0;
   for (auto u : a.vertices()) {
     if (v > p+r[u]) p += r[u];
     else { removeRandomEdge(a, u); break; }
