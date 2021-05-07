@@ -72,7 +72,7 @@ struct PageRankFlags {
 
 template <class T>
 struct PageRankOptions {
-  typedef PageRankMode Mode;
+  typedef PageRankMode  Mode;
   typedef PageRankFlags Flags;
   Mode  mode;
   Flags flags;
@@ -86,6 +86,45 @@ struct PageRankOptions {
     damping = _damping;
     convergence = _convergence;
     maxIterations = _maxIterations;
+  }
+};
+
+
+
+
+// PAGE-RANK UPDATE (DYNAMIC)
+// --------------------------
+
+enum struct PageRankUpdateMode {
+  RANDOM,
+  DEGREE,
+  RANK
+};
+
+struct PageRankUpdateFlags {
+  bool addVertices    = false;
+  bool removeVertices = false;
+  bool addEdges       = false;
+  bool removeEdges    = false;
+
+  PageRankUpdateFlags() = default;
+  PageRankUpdateFlags(int n) {
+    addVertices    = n & 8;
+    removeVertices = n & 4;
+    addEdges       = n & 2;
+    removeEdges    = n & 1;
+  }
+};
+
+struct PageRankUpdateOptions {
+  typedef PageRankUpdateMode  Mode;
+  typedef PageRankUpdateFlags Flags;
+  Mode mode;
+  Flags flags;
+
+  PageRankUpdateOptions(Mode _mode=Mode::RANDOM, Flags _flags={}) {
+    mode = _mode;
+    flags = _flags;
   }
 };
 

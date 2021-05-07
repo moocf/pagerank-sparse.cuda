@@ -153,7 +153,7 @@ template <class G>
 void removeRandomEdgeByDegree(G& a) {
   int v = rand() % a.size(), n = 0;
   for (auto u : a.vertices()) {
-    if (v > n+x.degree(u)) n += x.degree(u);
+    if (v > n+a.degree(u)) n += a.degree(u);
     else { removeRandomEdge(a, u); break; }
   }
 }
