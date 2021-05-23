@@ -12,12 +12,13 @@ bool isValid(PageRankFlags x) {
 
 
 bool isValidSwitched(PageRankFlags x) {
-  if (x.splitComponents && !x.largeComponents) return false;
+  // if (x.splitComponents && !x.largeComponents) return false;
   return true;
 }
 
 
 bool isValidStepped(PageRankFlags x) {
-  if (!(x.splitComponents && x.largeComponents && x.orderComponents)) return false;
+  // if (!(x.splitComponents && x.largeComponents && x.orderComponents)) return false;
+  if (!(x.splitComponents && x.orderComponents)) return false;
   return true;
 }

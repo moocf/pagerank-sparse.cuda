@@ -115,7 +115,7 @@ int main(int argc, char **argv) {
   setupAll(); testAll();
   printf("Loading graph %s ...\n", file);
   auto x = readMtx(file); println(x);
-  runPageRankDynamic(x, all);
+  runPageRank(x, all);
   printf("\n");
   return 0;
 }
