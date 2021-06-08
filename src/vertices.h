@@ -35,6 +35,14 @@ auto verticesBy(G& x, F fm) {
 }
 
 
+template <class G>
+auto verticesByDegree(G& x) {
+  auto a = vertices(x);
+  sort(a.begin(), a.end(), [&](int u, int v) { return x.degree(u) < x.degree(v); });
+  return a;
+}
+
+
 
 
 // VERTEX-HASH
