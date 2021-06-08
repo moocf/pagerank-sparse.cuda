@@ -50,7 +50,7 @@ template <class G>
 void runPageRank(G& x, bool all) {
   typedef PageRankFlags Flags; float t;
   int GB = GRID_DIM * BLOCK_DIM;
-  loopDeadEnds(x); // DEBUG: remove this
+  // loopDeadEnds(x); // DEBUG: remove this
   auto xt = transposeWithDegree(x); print(xt); printf(" (transposeWithDegree)\n");
   auto xn = transposeForNvgraph(x); print(xn); printf(" (transposeForNvgraph)\n");
   auto cs = components(x, xt); auto ds = joinUntilSize(cs, GB);
@@ -61,7 +61,7 @@ void runPageRank(G& x, bool all) {
   printf("deadEnds: %zu inIdenticals: %zu chains: %zu\n", de.size(), id.size(), ch.size());
   auto r1 = pageRankNvgraph(t, xn);
   printf("[%09.3f ms; %03dR] [%.4e] pageRankNvgraph\n", t, 0, absError(r1, r1)); if (all) println(r1);
-  for (int o=0; o<1; o++) // DEBUG: o<256
+  for (int o=0; o<256; o++) // DEBUG: o<256
     runPageRankCuda(x, xt, xe, xf, cs, id, ch, all, Flags(o), r1);
   for (int o=0; o<256; o++)
     runPageRankSteppedCuda(x, xt, xe, xf, cs, id, ch, all, Flags(o), r1);
