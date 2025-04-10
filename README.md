@@ -76,3 +76,5 @@ nvprof ./a.out ~/data/aug2d.mtx
 - [lower_bound == upper_bound](https://stackoverflow.com/a/12159150/1413259)
 - [Switch statement: must default be the last case?](https://stackoverflow.com/a/3110163/1413259)
 - [Equivalent of “using namespace X” for scoped enumerations?](https://stackoverflow.com/a/9450358/1413259)
+
+![](https://ga-beacon.deno.dev/G-G1E8HNDZYY:v51jklKGTLmC3LAZ4rJbIQ/github.com/moocf/pagerank-sparse.cuda)
